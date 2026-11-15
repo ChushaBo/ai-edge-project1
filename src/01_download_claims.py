@@ -89,12 +89,14 @@ def download(session, cfg, fields: pd.DataFrame) -> pd.DataFrame:
     df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     log_rows(logger, df, "downloaded")
 
+    # Stop before saving: a saved file is trusted and skipped on every later run.
     if len(df) != total:
-        logger.warning("Downloaded %d rows but the API reported %d. The dataset may have "
-                       "refreshed mid-download; rerun with --force.", len(df), total)
+        raise SystemExit(f"STOP: downloaded {len(df):,} rows but the API reported {total:,}. "
+                         "The dataset may have refreshed mid-download. Nothing was saved; rerun.")
     dupes = int(df["id"].duplicated().sum()) if "id" in df else 0
     if dupes:
-        logger.warning("%d duplicate id values (paging overlap?). Not dropped.", dupes)
+        raise SystemExit(f"STOP: {dupes:,} duplicate id values (paging overlap?). "
+                         "Nothing was saved; rerun.")
     return df
 
 

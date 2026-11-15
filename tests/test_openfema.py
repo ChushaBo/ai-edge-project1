@@ -112,3 +112,30 @@ def test_cast_by_dictionary_uses_declared_types():
     assert out["dateOfLoss"][0] == pd.Timestamp("2022-09-28", tz="UTC")
     assert out["built"][0] == pd.Timestamp("1960-01-01", tz="UTC")
     assert out["notInDictionary"].tolist() == ["x", "y"]  # untouched
+
+
+def _load_script_01():
+    import importlib.util
+    from utils.config import REPO_ROOT
+
+    spec = importlib.util.spec_from_file_location(
+        "download_claims", REPO_ROOT / "src" / "01_download_claims.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("pages, reported", [
+    ([[{"id": 1}, {"id": 2}]], 3),            # short download
+    ([[{"id": 1}], [{"id": 1}]], 2),          # duplicate ids
+])
+def test_download_stops_instead_of_saving_bad_data(monkeypatch, pages, reported):
+    script = _load_script_01()
+    monkeypatch.setattr(script.openfema, "fetch_count", lambda *a, **k: reported)
+    monkeypatch.setattr(script.openfema, "iter_pages", lambda *a, **k: iter(pages))
+    fields = pd.DataFrame({"name": ["id"], "type": ["bigint"]})
+    cfg = {"sources": {"openfema_base": "b", "claims_dataset": "NfipClaims", "claims_version": 3},
+           "scope": {"state_abbr": "FL"}, "years": {"claims_start": 2010, "claims_end": 2024}}
+
+    with pytest.raises(SystemExit, match="STOP"):
+        script.download(None, cfg, fields)

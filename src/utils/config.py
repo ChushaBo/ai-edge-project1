@@ -12,6 +12,7 @@ Usage in a pipeline script:
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,16 @@ def require(cfg: dict[str, Any], dotted_key: str) -> Any:
             "A person must set it and log it in docs/decisions.md."
         )
     return node
+
+
+def require_date(cfg: dict[str, Any], dotted_key: str) -> pd.Timestamp:
+    """Return a config date as a UTC pd.Timestamp, e.g. require_date(cfg, "splits.train_end").
+
+    YAML loads unquoted 2019-12-31 as datetime.date, while loss dates in the data are
+    UTC-aware timestamps; comparing the two directly raises a TypeError.
+    """
+    ts = pd.Timestamp(require(cfg, dotted_key))
+    return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
 
 def get_path(cfg: dict[str, Any], name: str, create: bool = True) -> Path:
