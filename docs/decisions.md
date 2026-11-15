@@ -22,6 +22,14 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Leakage sign-off on the feature table (RUNBOOK 2.3)
+- Decided by: Bohdan Chushak
+- config.yaml keys: allowed_features, derived_features, month_of_loss_models
+- Decision: Accept all 21 feature columns in data/interim/claims_clean.parquet: 16 raw allowed fields plus 5 derived (building_age_at_loss, policy_tenure_years, flood_zone_group, occupancy_group, month_of_loss). M1 uses 20 (no month_of_loss); M2 may use all 21.
+- Options considered: Dropping fields that can change because of a flood: elevatedBuildingIndicator, elevationDifference, policy_tenure_years (strongest candidates), policyCount, buildingDeductibleCode.
+- Rationale: Each is a property or policy attribute known before a flood, reviewed line by line against "would we know this before the flood?". Known caveat: claim records carry later-updated policy attributes (Risk Rating 2.0 codes on 2016–2019 losses; 2,418 claims with a policy start date after the loss), so some values may describe the property after its flood. Accepted and to be stated as a limitation.
+- Follow-ups / checks: If M1's SHAP results (step 5.3) lean heavily on elevatedBuildingIndicator, elevationDifference or policy_tenure_years, revisit this sign-off. tests/test_leakage.py enforces the allowed list.
+
 ### 2026-11-15 — Field review sign-off (RUNBOOK 1.4)
 - Decided by: Bohdan Chushak
 - config.yaml keys: fields.*, allowed_features, month_of_loss_models, flood_zone_groups, occupancy_groups
