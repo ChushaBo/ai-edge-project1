@@ -1,0 +1,6 @@
+step,rows
+raw claims,215099
+"drop exact copies (all columns except id, asOfDate)",214600
+drop $0 or missing totalBuildingInsuranceCoverage,209008
+drop netBuildingPaymentAmount <= 0,158908
+final feature table,158908

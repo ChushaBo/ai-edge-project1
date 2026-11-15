@@ -1,0 +1,5 @@
+# Normalize line endings; shell scripts must keep LF so bash can run them on Windows.
+* text=auto
+*.sh text eol=lf
+*.parquet binary
+*.pdf binary

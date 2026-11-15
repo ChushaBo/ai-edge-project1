@@ -17,15 +17,41 @@ Two model uses (keep them separate):
 
 ## Data sources (all public)
 
-- OpenFEMA FIMA NFIP Redacted Claims (v2): claim-level payouts.
-- OpenFEMA FIMA NFIP Redacted Policies: policy-level coverage and premium.
+- OpenFEMA NFIP Redacted Claims **v3** (`NfipClaims`): claim-level payouts. The v2
+  dataset ("FIMA NFIP Redacted Claims", `FimaNfipClaims`) is retired; do not switch back.
+- OpenFEMA NFIP Redacted Policies **v3** (`NfipPolicies`): policy-level coverage and
+  premium. Script 02 filters FEMA's bulk parquet locally because API paging times out.
 - NOAA NCEI Storm Events "details" CSVs: event type, dates, county/zone, narratives.
 - NWS zone-to-county correlation file: maps forecast zones (CZ_TYPE = Z) to counties.
 - Census cartographic boundary files: Florida county shapes for maps.
-- CPI (BLS CPI-U annual averages): inflation adjustment, stored as a small CSV.
+- CPI (BLS CPI-U annual averages): only needed for a dollar target; the current target
+  (share of coverage) does not use it.
 
 Always verify current endpoints and field names against the official data dictionaries.
 If a field name differs from what a task expects, STOP and report; do not guess.
+
+The saved dictionaries in `docs/data_dictionaries/` are the source of truth for field
+names. Several differ between claims and policies (e.g. `state` vs `propertyState`;
+policies have no county field, so county = first 5 digits of `censusGeoid`); the
+mapping is in `config.yaml` under `fields`.
+
+## Current status
+
+Update this section whenever a RUNBOOK step is finished.
+
+- Done: RUNBOOK 0.1–2.3. Scripts 01–04 are implemented; all decisions so far are in
+  `config.yaml` and logged in `docs/decisions.md` (field review: `docs/field_review_1_4.md`).
+- Next: **3.1** (`src/05_match_narratives.py`). Known issues from step 1.3:
+  - About 11% of zone-coded flood events (30–35% in 2010–2014) use zone codes that
+    are not in the current NWS zone files (zones were renumbered). Fall back to
+    matching `CZ_NAME` to a county name.
+  - NOAA begin/end times are local time; claim `dateOfLoss` is UTC midnight. Compare
+    calendar dates.
+  - Hurricanes are `Hurricane (Typhoon)` in NOAA data (config already uses this).
+- Open for human review: cleaning defaults in `config.yaml` (`cleaning.building_age_years`,
+  `cleaning.min_policy_tenure_years`).
+- Fresh clone: `data/` is not in git. Run `src/01`–`04` to rebuild it (02 downloads a
+  3.7 GB bulk file once), or `bash run_all.sh` once the later scripts exist.
 
 ## Repository layout
 
@@ -77,5 +103,7 @@ run_all.sh             # reproduces everything from raw downloads
 ## Commands
 
 - Setup: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+  (Windows: activate with `.venv\Scripts\activate`; tested on Python 3.14)
+- PR review: ask Claude Code to "review this branch with pr-reviewer" (`.claude/agents/pr-reviewer.md`)
 - Tests: `pytest -q`
 - Full pipeline: `bash run_all.sh`

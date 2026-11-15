@@ -1,26 +1,23 @@
 # RUNBOOK — Building the Florida Flood Shortfall Project with Claude Code
 
 How to use this file:
-- **[HUMAN]** steps must be done by a team member. Do not hand them to Claude Code.
+- **[HUMAN]** steps must be done by a person. Do not hand them to Claude Code.
 - **[CLAUDE CODE]** steps include a prompt to paste into Claude Code, run from the repo root.
 - **CHECKPOINT** lines say what to verify before moving on.
 - After every Claude Code step: review the diff, run `pytest -q`, and commit.
-
-Owner key (from the team split): **A** = claims and modeling, **B** = text pipeline,
-**C** = policies, shortfall, slides and video.
 
 ---
 
 ## Phase 0 — Setup (Fri 11/13)
 
-### 0.1 [HUMAN, A] Create the repository
+### 0.1 [HUMAN] Create the repository
 - Create a GitHub repo (e.g. `fl-flood-shortfall`), add teammates as collaborators.
 - Clone it locally. Copy `CLAUDE.md` and `RUNBOOK.md` into the repo root and commit.
 - Agree on a workflow: one branch per person, pull requests into `main`, one reviewer.
 - Install Claude Code on each machine (see https://docs.claude.com/en/docs/claude-code/overview)
   and confirm it can reach the internet, since the pipeline downloads public data.
 
-### 0.2 [CLAUDE CODE, A] Scaffold the repository
+### 0.2 [CLAUDE CODE] Scaffold the repository
 ```
 Read CLAUDE.md. Scaffold the repository layout it describes: folders, empty numbered
 scripts in src/ with docstrings stating each script's inputs and outputs, src/utils/
@@ -35,7 +32,7 @@ PCA dimensions, and random seed. Mark every decision value in config.yaml with a
 ```
 **CHECKPOINT:** `pytest -q` passes; folder layout matches CLAUDE.md; nothing in `data/` is tracked.
 
-### 0.3 [HUMAN, whole team] Fill in the first decisions in `config.yaml`
+### 0.3 [HUMAN] Fill in the first decisions in `config.yaml`
 Suggested starting values (log each in `docs/decisions.md`):
 - Claims years: 2010–2024. Exclude 2025+ because many of those claims may still be open.
 - Split by date of loss: train ≤ 2019, validation 2020–2021, test 2022–2024.
@@ -48,7 +45,7 @@ Suggested starting values (log each in `docs/decisions.md`):
 
 ## Phase 1 — Data acquisition (Fri 11/13 – Sat 11/14)
 
-### 1.1 [CLAUDE CODE, A] Download Florida claims
+### 1.1 [CLAUDE CODE] Download Florida claims
 ```
 Implement src/01_download_claims.py. Find the current OpenFEMA API endpoint and data
 dictionary for "FIMA NFIP Redacted Claims" (v2). Save the dictionary to
@@ -60,7 +57,7 @@ column with dtype and percent missing, and save that table to
 outputs/tables/claims_columns.csv. Do not drop or rename columns yet.
 ```
 
-### 1.2 [CLAUDE CODE, C] Download Florida policies
+### 1.2 [CLAUDE CODE] Download Florida policies
 ```
 Implement src/02_download_policies.py following the same pattern as 01. Find the
 current OpenFEMA endpoint and dictionary for "FIMA NFIP Redacted Policies" and save
@@ -72,7 +69,7 @@ match our claim features. Report which premium field(s) exist and what they incl
 and a column summary to outputs/tables/policies_columns.csv.
 ```
 
-### 1.3 [CLAUDE CODE, B] Download storm events and the zone-county file
+### 1.3 [CLAUDE CODE] Download storm events and the zone-county file
 ```
 Implement src/03_download_storms.py. From NOAA NCEI's Storm Events bulk CSV directory,
 download the "details" files for each year in config.yaml, filter to STATE = FLORIDA,
@@ -83,7 +80,7 @@ correlation file and save it to data/raw/. Log rows per year, rows per event typ
 and the share of rows with CZ_TYPE = Z versus C.
 ```
 
-### 1.4 [HUMAN, A + C] Review the data dictionaries
+### 1.4 [HUMAN] Review the data dictionaries
 - Read the saved dictionaries. For each field we plan to use, confirm the exact name,
   meaning, and units. Write the confirmed list into `config.yaml` (allowed features,
   target field, coverage field, premium field, county field, date-of-loss field).
@@ -97,7 +94,7 @@ and the share of rows with CZ_TYPE = Z versus C.
 
 ## Phase 2 — Cleaning and target (Sun 11/15)
 
-### 2.1 [HUMAN, A] Decide the target definition
+### 2.1 [HUMAN] Decide the target definition
 Choose one and record it in `config.yaml` and `docs/decisions.md`:
 - **Option 1 (recommended):** payout as a share of building coverage. Handles inflation
   and the $250,000 cap without adjustment.
@@ -106,7 +103,7 @@ Choose one and record it in `config.yaml` and `docs/decisions.md`:
 Also decide: drop claims with $0 paid from the severity model (recommended) and report
 how many there were.
 
-### 2.2 [CLAUDE CODE, A] Clean claims and build features
+### 2.2 [CLAUDE CODE] Clean claims and build features
 ```
 Implement src/04_clean_claims.py. Using only fields confirmed in config.yaml:
 build the target as defined in config.yaml; drop $0-paid claims and log how many;
@@ -121,7 +118,7 @@ splits. Produce outputs/tables/claims_summary_by_split.csv with counts and targe
 mean/median by split and flood zone.
 ```
 
-### 2.3 [HUMAN, A] Leakage sign-off
+### 2.3 [HUMAN] Leakage sign-off
 - Read the final feature list line by line and ask: "Would we know this before the
   flood?" Remove anything that fails. Log the sign-off in `docs/decisions.md`.
 
@@ -132,7 +129,7 @@ AE zones have higher average payouts than X).
 
 ## Phase 3 — Matching claims to storm narratives (Sun 11/15 – Mon 11/16)
 
-### 3.1 [CLAUDE CODE, B] Build the matcher
+### 3.1 [CLAUDE CODE] Build the matcher
 ```
 Implement src/05_match_narratives.py. Map every storm event to county FIPS codes:
 CZ_TYPE = C events use CZ_FIPS directly; CZ_TYPE = Z events use the NWS zone-to-county
@@ -148,7 +145,7 @@ Also export 20 random matched claims (claim date, county, narrative excerpt) to
 outputs/tables/match_spot_check.csv.
 ```
 
-### 3.2 [HUMAN, B] Review match quality
+### 3.2 [HUMAN] Review match quality
 - If the overall match rate is below about 70%, check the zone mapping first, then
   consider widening the window. Change values in `config.yaml` yourself and rerun.
 - Read the 20 spot-check rows: does each narrative plausibly describe the flood that
@@ -160,7 +157,7 @@ outputs/tables/match_spot_check.csv.
 
 ## Phase 4 — Text features (Mon 11/16)
 
-### 4.1 [CLAUDE CODE, B] Embed narratives
+### 4.1 [CLAUDE CODE] Embed narratives
 ```
 Implement src/06_embed_text.py. Embed each claim's combined narrative with the
 sentence-transformers model in config.yaml, batching and caching embeddings per unique
@@ -179,7 +176,7 @@ only on training rows.
 
 ## Phase 5 — Modeling and evaluation (Mon 11/16 – Tue 11/17)
 
-### 5.1 [CLAUDE CODE, A] Train and evaluate models
+### 5.1 [CLAUDE CODE] Train and evaluate models
 ```
 Implement src/07_train_models.py. Models:
 B0 = training mean; B1 = training mean by flood zone (fallback to B0 for unseen zones);
@@ -194,13 +191,13 @@ outputs/tables/metrics_by_event.csv, the trained models, and a bar chart compari
 MAE across models. Print a short plain-English summary of results.
 ```
 
-### 5.2 [HUMAN, A] Interpret results
+### 5.2 [HUMAN] Interpret results
 - Does M1 beat B1? Does M2 beat M1? Does M2_masked keep most of M2's gain? If masking
   erases the gain, the text is mostly leaking damage figures; say so honestly.
 - Check whether one storm (likely Ian) dominates the test results.
 - Do not go back and tune on test results. If you must change something, log why.
 
-### 5.3 [CLAUDE CODE, A] Explain the model
+### 5.3 [CLAUDE CODE] Explain the model
 ```
 Implement src/08_explain.py. Compute SHAP values for M1 on a sample of test rows.
 Save a summary plot, dependence plots for the top 5 features (including elevation
@@ -216,7 +213,7 @@ findings into `docs/decisions.md`.
 
 ## Phase 6 — Shortfall and Ian replay (Tue 11/17 – Wed 11/18)
 
-### 6.1 [CLAUDE CODE, C] Claim frequency
+### 6.1 [CLAUDE CODE] Claim frequency
 ```
 Implement src/09_frequency.py. Estimate annual claim frequency per policy by county
 and flood zone over the longest consistent window available, using policies-in-force
@@ -225,7 +222,7 @@ counts as the denominator and paid claims as the numerator. Apply simple smoothi
 the script docstring. Save outputs/tables/frequency_by_county_zone.csv.
 ```
 
-### 6.2 [CLAUDE CODE, C] Shortfall by county
+### 6.2 [CLAUDE CODE] Shortfall by county
 ```
 Implement src/10_shortfall.py. For the current Florida policy file, predict severity
 with M1 (tabular only), multiply by the frequency for each policy's county and zone to
@@ -236,7 +233,7 @@ ratio) and a Florida county choropleth of the loss ratio using Census county
 boundaries. Include a statewide total row.
 ```
 
-### 6.3 [CLAUDE CODE, B + C] Ian replay
+### 6.3 [CLAUDE CODE] Ian replay
 ```
 Implement src/11_ian_replay.py. Using Hurricane Ian's matched narratives (Sept–Oct
 2022), assign each county Ian affected its Ian narrative embedding, apply M2 to
@@ -248,7 +245,7 @@ headline chart. State every assumption in the script docstring and in
 outputs/tables/ian_replay_assumptions.md.
 ```
 
-### 6.4 [HUMAN, C] Sanity-check the headline numbers
+### 6.4 [HUMAN] Sanity-check the headline numbers
 - Compare model totals for Ian with publicly reported NFIP payouts for Ian. If they are
   off by a large factor, find out why before using them.
 - Write the caveats: premiums also cover administrative costs, NFIP can borrow from
@@ -261,7 +258,7 @@ outputs/tables/ian_replay_assumptions.md.
 
 ## Phase 7 — Deliverables (Wed 11/18 – Fri 11/20)
 
-### 7.1 [CLAUDE CODE, A] Reproducibility pass
+### 7.1 [CLAUDE CODE] Reproducibility pass
 ```
 From a fresh clone in a temporary directory, create a new virtual environment, install
 requirements.txt, and run run_all.sh end to end. Fix any missing dependencies,
@@ -269,7 +266,7 @@ hard-coded paths, or ordering issues. Pin package versions in requirements.txt t
 versions that worked. Report total runtime and any step that needs network access.
 ```
 
-### 7.2 [CLAUDE CODE, A] Draft the README
+### 7.2 [CLAUDE CODE] Draft the README
 ```
 Draft README.md (one page) for a data scientist at FEMA: problem, data sources with
 links and citation per OpenFEMA terms, pipeline overview mapped to src/ scripts, key
@@ -278,12 +275,12 @@ results table from outputs/tables/metrics_overall.csv, how to reproduce, and
 limitations. Use numbers only from files in outputs/. Do not invent results.
 ```
 
-### 7.3 [HUMAN, all] Edit the README and check the repo
+### 7.3 [HUMAN] Edit the README and check the repo
 - Verify every number in the README against `outputs/tables/`.
 - Confirm no raw data, credentials, or personally identifying information is in the
   repo (the data is redacted at source, but check anyway before publishing).
 
-### 7.4 [HUMAN, C with team] Slides and video
+### 7.4 [HUMAN] Slides and video
 - Slides (5–10) for a FEMA or Florida policy official: problem, data, approach,
   results vs. flood-zone benchmark, SHAP findings, shortfall map, Ian replay headline,
   recommendations and limitations.
@@ -292,7 +289,7 @@ limitations. Use numbers only from files in outputs/. Do not invent results.
 - Claude Code can regenerate figures in a presentation style if needed; the story,
   recommendations, and narration are yours.
 
-### 7.5 [HUMAN, A] Final check (Fri 11/20)
+### 7.5 [HUMAN] Final check (Fri 11/20)
 - Fresh clone runs end to end; tests pass; README numbers match outputs.
 - Submit the repo link, slides, and video.
 

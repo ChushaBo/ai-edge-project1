@@ -1,0 +1,13 @@
+# Data never goes in git (CLAUDE.md, rule 1)
+data/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db

@@ -1,0 +1,85 @@
+column,dtype,dictionary_type,non_null,pct_missing
+agricultureStructureIndicator,boolean,boolean,215099,0.0
+asOfDate,"datetime64[us, UTC]",datetime,215099,0.0
+basementEnclosureCrawlspaceType,Int64,smallint,98604,54.16
+policyCount,Int64,smallint,215099,0.0
+crsClassCode,Int64,smallint,177677,17.4
+dateOfLoss,"datetime64[us, UTC]",datetime,215099,0.0
+elevatedBuildingIndicator,boolean,boolean,215099,0.0
+elevationCertificateIndicator,string,text,34913,83.77
+elevationDifference,Int64,integer,90690,57.84
+baseFloodElevation,float64,"decimal(6,1)",90436,57.96
+ratedFloodZone,string,text,214962,0.06
+houseWorship,boolean,boolean,215099,0.0
+locationOfContents,Int64,smallint,124114,42.3
+lowestAdjacentGrade,float64,"decimal(6,1)",92860,56.83
+lowestFloorElevation,float64,"decimal(6,1)",94496,56.07
+numberOfFloorsInTheInsuredBuilding,Int64,smallint,214895,0.09
+nonProfitIndicator,boolean,boolean,215099,0.0
+obstructionType,Int64,smallint,43045,79.99
+occupancyType,Int64,smallint,215099,0.0
+originalConstructionDate,"datetime64[us, UTC]",date,213744,0.63
+originalNBDate,"datetime64[us, UTC]",date,215063,0.02
+amountPaidOnBuildingClaim,float64,"decimal(12,2)",183112,14.87
+amountPaidOnContentsClaim,float64,"decimal(12,2)",183112,14.87
+amountPaidOnIncreasedCostOfComplianceClaim,float64,"decimal(12,2)",183112,14.87
+postFIRMConstructionIndicator,boolean,boolean,215099,0.0
+rateMethod,string,text,215099,0.0
+smallBusinessIndicatorBuilding,boolean,boolean,215099,0.0
+totalBuildingInsuranceCoverage,Int64,integer,215099,0.0
+totalContentsInsuranceCoverage,Int64,integer,215097,0.0
+yearOfLoss,Int64,smallint,215099,0.0
+primaryResidenceIndicator,boolean,boolean,215099,0.0
+buildingDamageAmount,Int64,integer,178465,17.03
+buildingDeductibleCode,string,text,209703,2.51
+netBuildingPaymentAmount,float64,"decimal(12,2)",215099,0.0
+buildingPropertyValue,Int64,integer,178465,17.03
+causeOfDamage,string,text,211590,1.63
+condominiumCoverageTypeCode,string,text,214916,0.09
+contentsDamageAmount,Int64,integer,112720,47.6
+contentsDeductibleCode,string,text,160369,25.44
+netContentsPaymentAmount,float64,"decimal(12,2)",215099,0.0
+contentsPropertyValue,Int64,integer,112720,47.6
+disasterAssistanceCoverageRequired,Int64,smallint,94738,55.96
+eventDesignationNumber,string,text,135526,36.99
+ficoNumber,Int64,smallint,47281,78.02
+floodCharacteristicsIndicator,Int64,smallint,0,100.0
+floodWaterDuration,Int64,smallint,71203,66.9
+floodproofedIndicator,boolean,boolean,215099,0.0
+floodEvent,string,text,193290,10.14
+iccCoverage,Int64,integer,202390,5.91
+netIccPaymentAmount,float64,"decimal(8,2)",215099,0.0
+nfipRatedCommunityNumber,string,text,215099,0.0
+nfipCommunityNumberCurrent,string,text,165516,23.05
+nfipCommunityName,string,text,215098,0.0
+nonPaymentReasonContents,string,text,75243,65.02
+nonPaymentReasonBuilding,string,text,48798,77.31
+numberOfUnits,Int64,integer,214679,0.2
+buildingReplacementCost,Int64,bigint,178465,17.03
+contentsReplacementCost,Int64,integer,112713,47.6
+replacementCostBasis,string,text,213593,0.7
+stateOwnedIndicator,boolean,boolean,215099,0.0
+waterDepth,Int64,smallint,192527,10.49
+floodZoneCurrent,string,text,165355,23.13
+buildingDescriptionCode,Int64,smallint,162662,24.38
+rentalPropertyIndicator,boolean,boolean,215099,0.0
+state,string,text,215099,0.0
+reportedCity,string,text,215099,0.0
+reportedZipCode,string,text,215099,0.0
+countyCode,string,text,215014,0.04
+censusGeoid,string,text,213361,0.81
+latitude,float64,"decimal(9,1)",213733,0.64
+longitude,float64,"decimal(9,1)",213733,0.64
+foundationType,string,text,215099,0.0
+openDate,"datetime64[us, UTC]",date,215099,0.0
+mostRecentRecoveryDate,"datetime64[us, UTC]",date,465,99.78
+exteriorWaterDepth,Int64,integer,158332,26.39
+interiorWaterDepth,Int64,integer,142370,33.81
+mostRecentPaymentDate,"datetime64[us, UTC]",date,183112,14.87
+preFirmIndicator,boolean,boolean,215099,0.0
+totalSalvageRecovery,float64,"decimal(12,2)",465,99.78
+totalBldgClaimPmtRecovery,float64,"decimal(12,2)",465,99.78
+totalContentsClaimPmtRecovery,float64,"decimal(12,2)",465,99.78
+totalIccClaimPmtRecovery,float64,"decimal(12,2)",465,99.78
+totalSubrogationRecovery,float64,"decimal(12,2)",465,99.78
+id,Int64,bigint,215099,0.0
