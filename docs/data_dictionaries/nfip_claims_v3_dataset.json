@@ -1,0 +1,62 @@
+{
+  "identifier": "openfema-95",
+  "name": "NfipClaims",
+  "title": "NFIP Redacted Claims",
+  "description": "Congress passed the National Flood Insurance Act (NFIA), Title 42 United States Code 4001 in 1968, creating the National Flood Insurance Program (NFIP) in order to reduce future flood losses through flood hazard identification, floodplain management, and providing insurance protection. The Department of Housing and Urban Development (HUD) originally administered the program, and Congress subsequently transferred the National Flood Insurance Program  to FEMA upon its creation in 1979. FEMA and insurance companies participating in FEMA's Write Your Own (WYO) program offer flood insurance coverage for building structures as well as for contents and personal property within the building structures to eligible and insurable properties. The Write Your Own program began in 1983 with the National Flood Insurance Program operating under Part B of the National Flood Insurance Act and allows FEMA to authorize private insurance companies to issue the Standard Flood Insurance Policy (SFIP) as FEMA's fiduciary and fiscal agent. FEMA administers the flood insurance program by ensuring insurance applications are processed properly; determining correct premiums; renewing, reforming, and cancelling insurance policies; transferring policies from the seller of the property to the purchaser of the property in certain circumstances; and processing insurance claims. \n\nThe paid flood insurance premiums and claims payments for damaged property are processed through the National Flood Insurance Fund (NFIF). This fund was established by the National Flood Insurance Act of 1968 (Title 42 United States Code 4001, et seq.), and is a centralized premium revenue and fee-generated fund that supports the National Flood Insurance Program, which holds these U.S. Treasury funds. \n\nThis dataset provides details on flood insurance claims transactions. It is derived from the National Flood Insurance Program system of record, staged in the program's reporting platform and redacted to protect policy holder personally identifiable information.\n\nThe Flood Insurance Claims Manual (https://nfipservices.floodsmart.gov/insurance-manuals) provides claims guidance to Write Your Owns, vendors, adjusters, and examiners so that policyholders experience consistent and reliable service. The manual provides processes for handling claims from the notice of loss to final payment. FEMA has provided answers to Frequently Asked Questions (FAQs) to assist the public in understanding and navigating the data the National Flood Insurance Program makes available: https://www.fema.gov/sites/default/files/documents/fema_nfip-data-faqs.pdf\n\n\nThis dataset represents more than 2.7 million claims transactions. Due to the large file size we recommend using a database or programming/data management tools to visualize and manipulate the data, as Excel will not be able to process files this large without data loss. The dataset will be updated approximately monthly and will have a lag with the system of record. \n \nThis dataset is not intended to be an official federal report, and should not be considered an official federal report. \n \nFEMA's terms and conditions and citation requirements for datasets (API usage or file downloads) can be found on the OpenFEMA Terms and Conditions page: https://www.fema.gov/about/openfema/terms-conditions.\n\n\nFor answers to Frequently Asked Questions (FAQs) about the OpenFEMA program, API, and publicly available datasets, please visit: https://www.fema.gov/about/openfema/faq.\nIf you have media inquiries about this dataset, please email the FEMA Press Office at FEMA-Press-Office@fema.dhs.gov. For inquiries about FEMA's data and Open Government program, please email the OpenFEMA team at OpenFEMA@fema.dhs.gov.",
+  "webService": "https://www.fema.gov/api/open/v3/NfipClaims",
+  "dataDictionary": "https://www.fema.gov/openfema-data-page/nfip-redacted-claims-v3",
+  "keyword": [
+    "NFIP",
+    "claims",
+    "flood insurance"
+  ],
+  "modified": "2026-07-20T00:00:00.000Z",
+  "publisher": "FEMA/Resilience/Federal Insurance Directorate",
+  "contactPoint": "OpenFEMA",
+  "mbox": "openfema@fema.gov",
+  "accessLevel": "public",
+  "landingPage": "https://www.fema.gov/flood-insurance",
+  "temporal": "1970-08-31/",
+  "api": true,
+  "version": 3,
+  "bureauCode": [
+    "024:70"
+  ],
+  "programCode": [
+    "024:039"
+  ],
+  "accessLevelComment": null,
+  "license": null,
+  "spatial": null,
+  "theme": "National Flood Insurance Program",
+  "dataQuality": "true",
+  "accrualPeriodicity": "R/P1M",
+  "language": "en-US",
+  "primaryITInvestmentUII": null,
+  "references": [
+    "https://nfipservices.floodsmart.gov/manuals/jan_2015_consolidated_trrp.pdf"
+  ],
+  "issued": "2019-06-01T00:00:00.000Z",
+  "systemOfRecords": null,
+  "recordCount": 2725989,
+  "depDate": null,
+  "depApiMessage": null,
+  "depWebMessage": null,
+  "depNewURL": null,
+  "hash": "9eaf194937eba43e6df9f1809f311d2c63058c81",
+  "lastRefresh": "2026-08-04T22:40:36.263Z",
+  "id": "38707079-3400-4c56-bb50-3282881e21be",
+  "lastDataSetRefresh": "2026-09-09T16:23:10.614Z",
+  "distribution": [
+    {
+      "format": "csv",
+      "accessURL": "https://www.fema.gov/about/reports-and-data/openfema/v3/NfipClaimsV3.csv",
+      "datasetSize": "large (500MB - 10GB)"
+    },
+    {
+      "format": "parquet",
+      "accessURL": "https://www.fema.gov/about/reports-and-data/openfema/v3/NfipClaimsV3.parquet",
+      "datasetSize": "medium (50MB - 500GB)"
+    }
+  ]
+}

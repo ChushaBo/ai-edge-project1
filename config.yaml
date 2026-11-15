@@ -1,0 +1,89 @@
+# config.yaml — every tunable choice for the pipeline (see CLAUDE.md, rule 2).
+#
+# Values marked "# DECISION:" are made by people, not by code or Claude Code.
+# Record each one in docs/decisions.md when you fill it in.
+# `null` means "not decided yet". Scripts call utils.config.require(), which stops
+# with an error if a value they need is still null.
+
+# Where scripts read and write. Relative to the repo root. These are structural,
+# not modeling decisions; data/ is gitignored.
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  models: data/models
+  figures: outputs/figures
+  tables: outputs/tables
+  data_dictionaries: docs/data_dictionaries
+
+# Project scope (fixed by the project definition, not a tunable decision).
+scope:
+  state_abbr: FL
+  state_fips: "12"
+
+# Data source endpoints. Verified against the OpenFEMA catalog (DataSets) on 2026-11-15:
+# "FIMA NFIP Redacted Claims v2" (FimaNfipClaims) no longer exists; the current dataset
+# is NfipClaims v3 ("NFIP Redacted Claims").
+sources:
+  openfema_base: https://www.fema.gov/api/open
+  claims_dataset: NfipClaims
+  claims_version: 3
+
+years:
+  claims_start: 2010     # DECISION: first year of loss to include (int); storms use the same range
+  claims_end: 2024       # DECISION: last year of loss to include (int); exclude years with many open claims
+  policies_year: null    # DECISION: use policies in force during this year (int). Pending:
+                         # check Oct 2025 NFIP lapse after step 1.2 (see docs/decisions.md)
+
+# Time-based split on date of loss (CLAUDE.md, rule 4). Dates are inclusive, YYYY-MM-DD.
+# train: loss date <= train_end
+# validation: train_end < loss date <= validation_end
+# test: validation_end < loss date (through years.claims_end)
+splits:
+  train_end: 2019-12-31  # DECISION: last date of loss in the training set
+  validation_end: 2021-12-31  # DECISION: last date of loss in the validation set
+
+target:
+  definition: null       # DECISION: "share_of_coverage" or "log_payout_real" (see RUNBOOK 2.1)
+  drop_zero_paid: null   # DECISION: true/false, drop $0-paid claims from the severity model
+  cpi_base_year: null    # DECISION: dollar year for CPI adjustment (int); only if the target needs it
+
+# Exact field names, confirmed by a person against the saved data dictionaries
+# (RUNBOOK 1.4). Do not guess these.
+fields:
+  claims_paid: null      # DECISION: building amount paid (the target's source field)
+  claims_coverage: null  # DECISION: building coverage amount
+  claims_date_of_loss: null  # DECISION: date of loss
+  claims_county: null    # DECISION: county FIPS code
+  claims_flood_zone: null    # DECISION: flood zone
+  policies_premium: null # DECISION: premium field (state what it includes in docs/decisions.md)
+  policies_coverage: null    # DECISION: building coverage amount on the policy
+  policies_county: null  # DECISION: county FIPS code
+  policies_flood_zone: null  # DECISION: flood zone
+
+# The ONLY columns that may reach the model (CLAUDE.md, rule 3). Pre-event fields only.
+allowed_features: null   # DECISION: list of confirmed claim field names
+
+# Claim-to-storm-event matching window around the date of loss, in days.
+match_window:
+  days_before: 3         # DECISION: days before date of loss (int)
+  days_after: 3          # DECISION: days after date of loss (int)
+
+# DECISION: list of NOAA EVENT_TYPE values to keep. Verify exact spellings against
+# storms_fl.parquet after step 1.3 (e.g. older files may use "Hurricane (Typhoon)").
+storm_event_types:
+  - Flood
+  - Flash Flood
+  - Coastal Flood
+  - Storm Surge/Tide
+  - Heavy Rain
+  - Hurricane
+  - Tropical Storm
+
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2  # DECISION: sentence-transformers model name
+
+pca:
+  n_components: 24       # DECISION: PCA dimensions for text embeddings (int); fit on train only
+
+random_seed: 42          # DECISION: seed for numpy, sklearn, lightgbm, torch (int)
