@@ -1,0 +1,63 @@
+column,dtype,dictionary_type,non_null,pct_missing
+id,Int64,bigint,1146045,0.0
+propertyState,string,text,1146045,0.0
+censusGeoid,string,text,1136841,0.8
+reportedZipCode,string,text,1146045,0.0
+reportedCity,string,text,1146045,0.0
+latitude,float64,"decimal(9,1)",1136841,0.8
+longitude,float64,"decimal(9,1)",1136841,0.8
+nfipRatedCommunityNumber,string,text,1146045,0.0
+nfipCommunityNumberCurrent,string,text,1146045,0.0
+nfipCommunityName,string,text,1146045,0.0
+asOfDate,"datetime64[us, UTC]",datetimez,1146045,0.0
+policyEffectiveDate,"datetime64[s, UTC]",date,1146045,0.0
+policyTerminationDate,"datetime64[s, UTC]",date,1146045,0.0
+policyTermIndicator,Int64,smallint,1146045,0.0
+cancellationDateOfFloodPolicy,"datetime64[s, UTC]",date,42185,96.32
+cancellationVoidanceReasonCode,string,text,42185,96.32
+originalNBDate,"datetime64[s, UTC]",date,1145398,0.06
+policyCount,Int64,smallint,1146045,0.0
+totalBuildingInsuranceCoverage,Int64,integer,1146045,0.0
+totalContentsInsuranceCoverage,Int64,integer,1146045,0.0
+totalInsurancePremiumOfThePolicy,Int64,integer,1146045,0.0
+policyCost,Int64,integer,1146045,0.0
+fullRiskPremium,Int64,integer,1136841,0.8
+federalPolicyFee,Int64,smallint,1146045,0.0
+hfiaaSurcharge,Int64,smallint,1146045,0.0
+reserveFundAssessment,Int64,integer,1146045,0.0
+iccPremium,Int64,smallint,1056629,7.8
+communityProbationSurcharge,Int64,smallint,0,100.0
+buildingDeductibleCode,string,text,1118202,2.43
+contentsDeductibleCode,string,text,879385,23.27
+rateMethod,string,text,1146045,0.0
+ratedFloodZone,string,text,1146045,0.0
+floodZoneCurrent,string,text,645692,43.66
+baseFloodElevation,float64,"decimal(8,2)",336507,70.64
+lowestFloorElevation,float64,"decimal(8,2)",413216,63.94
+lowestAdjacentGrade,float64,"decimal(8,2)",413217,63.94
+elevationDifference,Int64,integer,337460,70.55
+elevationCertificateIndicator,string,text,98440,91.41
+elevatedBuildingIndicator,boolean,boolean,1146045,0.0
+postFIRMConstructionIndicator,boolean,boolean,1146045,0.0
+preFIRMConstructionIndicator,boolean,boolean,1146045,0.0
+crsClassCode,Int64,smallint,1120055,2.27
+occupancyType,Int64,smallint,1146045,0.0
+originalConstructionDate,"datetime64[s, UTC]",date,1136841,0.8
+numberOfFloorsInInsuredBuilding,Int64,smallint,1146044,0.0
+basementEnclosureCrawlspaceType,Int64,smallint,406381,64.54
+foundationType,string,text,1146045,0.0
+obstructionType,Int64,smallint,67992,94.07
+locationOfContents,Int64,smallint,506626,55.79
+buildingDescriptionCode,Int64,smallint,598413,47.78
+buildingPurpose,string,text,514283,55.13
+buildingReplacementCost,Int64,bigint,645792,43.65
+condominiumCoverageTypeCode,string,text,1146045,0.0
+primaryResidenceIndicator,boolean,boolean,1146045,0.0
+rentalPropertyIndicator,boolean,boolean,1146045,0.0
+smallBusinessIndicatorBuilding,boolean,boolean,1146045,0.0
+nonProfitIndicator,boolean,boolean,1146045,0.0
+stateOwnedIndicator,boolean,boolean,1146045,0.0
+agricultureStructureIndicator,boolean,boolean,1146045,0.0
+houseOfWorshipIndicator,boolean,boolean,1146045,0.0
+floodproofedIndicator,boolean,boolean,1146045,0.0
+disasterAssistanceCoverageRequiredCode,Int64,smallint,252793,77.94

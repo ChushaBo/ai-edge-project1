@@ -28,7 +28,6 @@ rebuilt from the saved file on every run.
 """
 
 import argparse
-import json
 
 import pandas as pd
 from tqdm import tqdm
@@ -45,27 +44,15 @@ REQUIRED_FIELDS = ("id", "state", "yearOfLoss")
 
 
 def load_or_fetch_dictionary(session, cfg, force: bool) -> pd.DataFrame:
-    base = require(cfg, "sources.openfema_base")
-    dataset = require(cfg, "sources.claims_dataset")
-    version = require(cfg, "sources.claims_version")
-    dict_dir = get_path(cfg, "data_dictionaries")
-    fields_path = dict_dir / f"nfip_claims_v{version}_fields.csv"
-    record_path = dict_dir / f"nfip_claims_v{version}_dataset.json"
-
-    if fields_path.exists() and record_path.exists() and not force:
-        logger.info("Data dictionary exists, not re-fetching: %s", fields_path)
-        return pd.read_csv(fields_path)
-
-    record = openfema.fetch_dataset_record(session, base, dataset, version)
-    record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
-    fields = openfema.fetch_fields(session, base, dataset, version)
-    keep = [c for c in ("sortOrder", "name", "title", "type", "isNullable", "isSearchable",
-                        "primaryKey", "description", "lastRefresh") if c in fields]
-    fields[keep].to_csv(fields_path, index=False)
-    logger.info("Saved data dictionary (%d fields) to %s and %s",
-                len(fields), fields_path, record_path)
-    logger.info("Human-readable dictionary page: %s", record.get("dataDictionary"))
-    return fields[keep]
+    return openfema.save_dictionary(
+        session,
+        require(cfg, "sources.openfema_base"),
+        require(cfg, "sources.claims_dataset"),
+        require(cfg, "sources.claims_version"),
+        get_path(cfg, "data_dictionaries"),
+        prefix="nfip_claims",
+        force=force,
+    )
 
 
 def download(session, cfg, fields: pd.DataFrame) -> pd.DataFrame:

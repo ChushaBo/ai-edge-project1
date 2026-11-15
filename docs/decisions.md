@@ -22,6 +22,22 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Policy year: 2025, terms starting that year (update)
+- Decided by: Bohdan Chushak
+- config.yaml keys: years.policies_year
+- Decision: 2025. A policy counts if its policyEffectiveDate falls in 2025 (one row per annual term), so each policy is counted once with one annual premium.
+- Options considered: 2024 (last full pre-lapse year); in-force snapshot on 2025-09-30; policies in force at any time in 2025 (most policies would appear twice, the expiring term plus its renewal, needing premium pro-rating).
+- Rationale: Lapse check from the OpenFEMA NfipPolicies v3 API (Florida policy terms starting per month, queried 2026-11-15). Terms started Oct–Dec 2025 were 6%, 10% and 15% below the same months of 2024, but the full year was only 1.3% lower (1,146,045 in 2025 vs 1,161,505 in 2024). The lapse dip is small over the year, so the most recent complete year stands. Monthly 2026 counts run about 5–6% below 2025, a general downward trend.
+- Follow-ups / checks: Mention the Q4 2025 dip as a caveat on the shortfall results. Supersedes the follow-up in the "Policy snapshot" entry below.
+
+### 2026-11-15 — Storm event types: NOAA spelling of Hurricane (correction)
+- Decided by: Bohdan Chushak
+- config.yaml keys: storm_event_types
+- Decision: Replace "Hurricane" with "Hurricane (Typhoon)". No change in intent.
+- Options considered: Leave as is (would silently exclude every hurricane event).
+- Rationale: Step 1.3 found that NOAA's Florida details files spell the type "Hurricane (Typhoon)" (122 rows, 2010–2024); "Hurricane" matched 0 rows. The other six types matched exactly: Flood 932, Flash Flood 969, Coastal Flood 308, Storm Surge/Tide 180, Heavy Rain 1,230, Tropical Storm 840.
+- Follow-ups / checks: Tropical Depression (123 rows) is still excluded; see the "Storm event types" entry below.
+
 ### 2026-11-15 — Claims year range
 - Decided by: Bohdan Chushak
 - config.yaml keys: years.claims_start, years.claims_end
@@ -52,7 +68,7 @@ Copy this block for each decision.
 - Decision: Flood, Flash Flood, Coastal Flood, Storm Surge/Tide, Heavy Rain, Hurricane, Tropical Storm.
 - Options considered: Add Tropical Depression; include Thunderstorm Wind, Tornado, Hail (rejected).
 - Rationale: The first four are direct causes of flood claims; Coastal Flood also covers tidal "sunny-day" flooding. Hurricane and Tropical Storm narratives often describe overall flooding even when separate flood events exist. Heavy Rain is included because rain flooding is not always logged as a Flood event. Wind, tornado, and hail damage is not covered by flood insurance, so that text would be irrelevant.
-- Follow-ups / checks: Consider adding Tropical Depression, which can cause significant rain flooding. Check rows per event type in Florida after step 1.3: [fill after step 1.3].
+- Follow-ups / checks: Consider adding Tropical Depression, which can cause significant rain flooding. Rows per event type in Florida (step 1.3): Flood 932; Flash Flood 969; Coastal Flood 308; Storm Surge/Tide 180; Heavy Rain 1,230; Hurricane (Typhoon) 122; Tropical Storm 840; Tropical Depression 123 (not included).
 
 ### 2026-11-15 — Text embedding model
 - Decided by: Bohdan Chushak
@@ -83,5 +99,5 @@ Copy this block for each decision.
 - config.yaml keys: years.policies_year
 - Decision: Florida NFIP policies in force during the most recent complete year available.
 - Options considered: Policies in force on a snapshot date (e.g. 2025-09-30); full-year 2024; multi-year average.
-- Rationale: The shortfall should reflect today's policies and pricing. FEMA phased in Risk Rating 2.0 starting in late 2021, so recent premiums reflect the current pricing system. Recent data also captures Florida's growing flood coverage requirements for Citizens policyholders. Policy count: [fill after step 1.2].
+- Rationale: The shortfall should reflect today's policies and pricing. FEMA phased in Risk Rating 2.0 starting in late 2021, so recent premiums reflect the current pricing system. Recent data also captures Florida's growing flood coverage requirements for Citizens policyholders. Policy count (step 1.2, terms effective in 2025): 1,146,045 policy terms covering 1,807,343 insured units (condo association policies cover several units).
 - Follow-ups / checks: The NFIP lapsed in October 2025, which may have stalled new policies and renewals and distorted full-year 2025 counts. Check monthly policy counts for a dip around October 2025; if present, switch to a pre-lapse snapshot date such as 2025-09-30.

@@ -1,0 +1,12 @@
+position,name,description
+1,STATE,Two character state abbreviation
+2,ZONE,Three character zone number
+3,CWA,"Three character CWA ID (of the zone, starting with 01 May 2018 file)"
+4,NAME,Zone name
+5,STATE_ZONE,5 character state + three character zone number
+6,COUNTY,County name
+7,FIPS,5 character state-county FIPS code
+8,TIME_ZONE,Time zone of polygon
+9,FE_AREA,Feature Area (location in STATE)
+10,LAT,Latitude of centroid of the zone
+11,LON,Longitude of centroid of the zone

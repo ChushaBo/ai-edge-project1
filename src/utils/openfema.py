@@ -10,8 +10,10 @@ Field metadata (the machine-readable data dictionary) comes from the
 OpenFemaDataSetFields dataset.
 """
 
+import json
 import time
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -113,6 +115,63 @@ def iter_pages(
         if not records:
             break
         yield records
+
+
+def iter_all(
+    session: requests.Session,
+    url: str,
+    dataset: str,
+    filter_: str,
+    select: list[str] | None = None,
+    page_size: int = MAX_PAGE_SIZE,
+    order_by: str = "id",
+) -> Iterator[list[dict]]:
+    """Yield pages for a small filter without a count call: stop at the first short page.
+
+    For slices (e.g. one day of policies) where a $count per slice would double the
+    number of requests. Callers should still check the overall total.
+    """
+    skip = 0
+    while True:
+        params: dict[str, Any] = {
+            "$filter": filter_, "$top": page_size, "$skip": skip, "$orderby": order_by,
+        }
+        if select:
+            params["$select"] = ",".join(select)
+        records = _get_json(session, url, params).get(dataset, [])
+        if records:
+            yield records
+        if len(records) < page_size:
+            return
+        skip += page_size
+
+
+def save_dictionary(
+    session: requests.Session,
+    base: str,
+    dataset: str,
+    version: int,
+    out_dir: Path,
+    prefix: str,
+    force: bool = False,
+) -> pd.DataFrame:
+    """Save the field dictionary (<prefix>_v<version>_fields.csv) and catalog entry
+    (<prefix>_v<version>_dataset.json) to out_dir, or load them if already saved."""
+    fields_path = out_dir / f"{prefix}_v{version}_fields.csv"
+    record_path = out_dir / f"{prefix}_v{version}_dataset.json"
+    if fields_path.exists() and record_path.exists() and not force:
+        logger.info("Data dictionary exists, not re-fetching: %s", fields_path)
+        return pd.read_csv(fields_path)
+
+    record = fetch_dataset_record(session, base, dataset, version)
+    record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+    fields = fetch_fields(session, base, dataset, version)
+    keep = [c for c in ("sortOrder", "name", "title", "type", "isNullable", "isSearchable",
+                        "primaryKey", "description", "lastRefresh") if c in fields]
+    fields[keep].to_csv(fields_path, index=False)
+    logger.info("Saved data dictionary (%d fields) to %s and %s", len(fields), fields_path, record_path)
+    logger.info("Human-readable dictionary page: %s", record.get("dataDictionary"))
+    return fields[keep]
 
 
 def fetch_fields(session: requests.Session, base: str, dataset: str, version: int) -> pd.DataFrame:

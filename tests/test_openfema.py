@@ -139,3 +139,34 @@ def test_download_stops_instead_of_saving_bad_data(monkeypatch, pages, reported)
 
     with pytest.raises(SystemExit, match="STOP"):
         script.download(None, cfg, fields)
+
+
+def test_iter_all_pages_until_short_page():
+    records = [{"id": i} for i in range(25)]
+    session = FakeSession(records)
+    pages = list(openfema.iter_all(session, "u", "NfipClaims", "f", page_size=10))
+    assert [len(p) for p in pages] == [10, 10, 5]
+    assert [c["$skip"] for c in session.calls] == [0, 10, 20]
+
+
+def test_iter_all_exact_multiple_makes_one_extra_call():
+    session = FakeSession([{"id": i} for i in range(20)])
+    pages = list(openfema.iter_all(session, "u", "NfipClaims", "f", page_size=10))
+    assert [len(p) for p in pages] == [10, 10]
+    assert len(session.calls) == 3  # third call returns 0 rows and ends the loop
+
+
+def test_save_dictionary_reuses_saved_files(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(openfema, "fetch_dataset_record",
+                        lambda *a: calls.append("record") or {"dataDictionary": "x"})
+    monkeypatch.setattr(openfema, "fetch_fields", lambda *a: calls.append("fields") or pd.DataFrame(
+        {"sortOrder": [1], "name": ["id"], "type": ["bigint"], "description": ["Unique ID"]}))
+
+    first = openfema.save_dictionary(None, "b", "NfipPolicies", 3, tmp_path, "nfip_policies")
+    second = openfema.save_dictionary(None, "b", "NfipPolicies", 3, tmp_path, "nfip_policies")
+
+    assert calls == ["record", "fields"]  # second call read from disk
+    assert (tmp_path / "nfip_policies_v3_fields.csv").exists()
+    assert (tmp_path / "nfip_policies_v3_dataset.json").exists()
+    assert first["name"].tolist() == second["name"].tolist() == ["id"]

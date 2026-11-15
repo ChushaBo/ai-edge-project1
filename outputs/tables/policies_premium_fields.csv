@@ -1,0 +1,9 @@
+field,non_null,total,mean,median,description
+totalInsurancePremiumOfThePolicy,1146045,1581015375.0,1379.54,781.0,Total Insurance Premium of the Policy in whole dollars. Negative values indicate a refund.
+policyCost,1146045,2027042167.0,1768.73,1044.0,"Calculated in dollars by adding together calculated premium, reserve fund assessment, federal policy fee, and HFIAA surcharge"
+fullRiskPremium,1136841,2723753773.0,2395.9,1062.0,The chargeable premium for a property based on its determined flood risk and the full cost to pay anticipated losses and expenses for that property.
+federalPolicyFee,1146045,71472551.0,62.36,47.0,Dollar amount of the Federal Policy Fee of the policy
+hfiaaSurcharge,1146045,93959250.0,81.99,25.0,"Required for all new and renewal policies on or after April 1, 2015. Congressionally mandated annual surcharge in dollars required by the Homeowner Flood Insurance Affordability Act of 2014 (HFIAA)"
+reserveFundAssessment,1146045,280594991.0,244.84,139.0,The dollar sum of the reserve fund as reported by the company
+iccPremium,1056629,38010599.0,35.97,26.0,The whole dollar amount of the Increased Cost of Compliance (ICC) premium selected before any discounts are applied by the company to rate the policy.
+communityProbationSurcharge,0,0.0,,,"The probation surcharge amount, in whole dollars, is calculated by the company to rate the policy. NOTE: A probation surcharge is a flat surcharge that the policyholder must pay on each new or renewed policy issued covering property in a community that the NFIP has placed on probation under the provisions of 44 CFR 59.24"
