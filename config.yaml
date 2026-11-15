@@ -196,6 +196,18 @@ occupancy_groups:            # DECISION: consistent across legacy (1-6) and Risk
 cleaning:
   drop_exact_duplicate_claims: true   # DECISION: rows identical in every column except id/asOfDate
   exclude_cancelled_policies: true    # DECISION: drop terms with cancellationDateOfFloodPolicy from premium and exposure
+  # Defaults set by Claude Code in step 2.2, for human review (not yet signed off):
+  building_age_years: [0, 150]   # outside this range -> missing (bad construction dates)
+  min_policy_tenure_years: 0     # negative tenure (policy start after loss) -> missing
+
+# Columns 04_clean_claims derives from allowed features (name: source field).
+# The leakage test treats these as allowed; month_of_loss is for M2 only.
+derived_features:
+  building_age_at_loss: originalConstructionDate
+  policy_tenure_years: originalNBDate
+  flood_zone_group: ratedFloodZone
+  occupancy_group: occupancyType
+  month_of_loss: dateOfLoss
 
 # Claim-to-storm-event matching window around the date of loss, in days.
 match_window:
