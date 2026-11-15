@@ -124,25 +124,78 @@ splits:
   validation_end: 2021-12-31  # DECISION: last date of loss in the validation set
 
 target:
-  definition: null       # DECISION: "share_of_coverage" or "log_payout_real" (see RUNBOOK 2.1)
-  drop_zero_paid: null   # DECISION: true/false, drop $0-paid claims from the severity model
-  cpi_base_year: null    # DECISION: dollar year for CPI adjustment (int); only if the target needs it
+  definition: share_of_coverage  # DECISION: building payout / building coverage (RUNBOOK 2.1)
+  drop_zero_paid: true   # DECISION: drop $0-paid claims from the severity model; log the count
+  cpi_base_year: null    # not used: share_of_coverage needs no CPI adjustment
+  drop_zero_coverage: true   # DECISION: drop claims with $0 building coverage (target undefined)
+  cap_share_at: 1.0      # DECISION: cap payouts above coverage at 100% of coverage
 
 # Exact field names, confirmed by a person against the saved data dictionaries
 # (RUNBOOK 1.4). Do not guess these.
 fields:
-  claims_paid: null      # DECISION: building amount paid (the target's source field)
-  claims_coverage: null  # DECISION: building coverage amount
-  claims_date_of_loss: null  # DECISION: date of loss
-  claims_county: null    # DECISION: county FIPS code
-  claims_flood_zone: null    # DECISION: flood zone
-  policies_premium: null # DECISION: premium field (state what it includes in docs/decisions.md)
-  policies_coverage: null    # DECISION: building coverage amount on the policy
-  policies_county: null  # DECISION: county FIPS code
-  policies_flood_zone: null  # DECISION: flood zone
+  claims_paid: netBuildingPaymentAmount        # DECISION: never missing; = amountPaidOnBuildingClaim minus recoveries
+  claims_coverage: totalBuildingInsuranceCoverage  # DECISION
+  claims_date_of_loss: dateOfLoss              # DECISION
+  claims_county: countyCode                    # DECISION: 5-digit FIPS
+  claims_flood_zone: ratedFloodZone            # DECISION: grouped per flood_zone_groups
+  policies_premium: totalInsurancePremiumOfThePolicy  # DECISION: premium only, excludes fees and surcharges
+  policies_premium_comparisons:                # DECISION: also reported in the shortfall table
+    - policyCost         # premium + reserve fund + federal fee + HFIAA surcharge
+    - fullRiskPremium    # FEMA's full-risk price
+  policies_coverage: totalBuildingInsuranceCoverage  # DECISION
+  policies_county: censusGeoid                 # DECISION: county FIPS = first 5 digits (no county field)
+  policies_flood_zone: ratedFloodZone          # DECISION: grouped per flood_zone_groups
+  # Claims feature names that differ in the policies data.
+  policies_renamed:
+    numberOfFloorsInTheInsuredBuilding: numberOfFloorsInInsuredBuilding
+    houseWorship: houseOfWorshipIndicator
+    preFirmIndicator: preFIRMConstructionIndicator
+    disasterAssistanceCoverageRequired: disasterAssistanceCoverageRequiredCode
 
-# The ONLY columns that may reach the model (CLAUDE.md, rule 3). Pre-event fields only.
-allowed_features: null   # DECISION: list of confirmed claim field names
+# The ONLY columns that may reach the model (CLAUDE.md, rule 3). Pre-event fields only,
+# and present on the policies file so M1 can price 2025 policies (step 6.2).
+# DECISION: "Core 20", signed off 2026-11-15 (docs/decisions.md, docs/field_review_1_4.md).
+allowed_features:
+  - ratedFloodZone                       # used as flood_zone_groups
+  - totalBuildingInsuranceCoverage
+  - totalContentsInsuranceCoverage
+  - occupancyType                        # used as occupancy_groups
+  - numberOfFloorsInTheInsuredBuilding
+  - foundationType
+  - elevatedBuildingIndicator
+  - postFIRMConstructionIndicator
+  - originalConstructionDate             # derive building age
+  - originalNBDate                       # derive policy tenure
+  - primaryResidenceIndicator
+  - rentalPropertyIndicator
+  - condominiumCoverageTypeCode
+  - policyCount
+  - crsClassCode
+  - buildingDeductibleCode
+  - basementEnclosureCrawlspaceType      # 54% missing on claims
+  - elevationDifference                  # 58% missing on claims
+  - latitude
+  - longitude
+
+# Month of loss is post-event: allowed in M2 only, never in M1.
+month_of_loss_models: [M2]   # DECISION
+
+# Groupings applied to claims and policies alike.
+flood_zone_groups:           # DECISION: merges legacy numbered zones with modern ones
+  V: [V, VE, V01, V02, V03, V04, V05, V06, V07, V08, V09, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V30]
+  A: [A, AE, A99, A01, A02, A03, A04, A05, A06, A07, A08, A09, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30]
+  AH_AO: [AH, AHB, AO, AOB]
+  X: [X, B, C]
+  D: [D]
+occupancy_groups:            # DECISION: consistent across legacy (1-6) and Risk Rating 2.0 (11-19) codes
+  single_unit: [1, 11, 14, 16]
+  two_to_four_units: [2, 12]
+  five_plus_or_condo: [3, 13, 15]
+  non_residential: [4, 6, 17, 18, 19]
+
+cleaning:
+  drop_exact_duplicate_claims: true   # DECISION: rows identical in every column except id/asOfDate
+  exclude_cancelled_policies: true    # DECISION: drop terms with cancellationDateOfFloodPolicy from premium and exposure
 
 # Claim-to-storm-event matching window around the date of loss, in days.
 match_window:

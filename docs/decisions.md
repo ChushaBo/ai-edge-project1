@@ -22,6 +22,30 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Field review sign-off (RUNBOOK 1.4)
+- Decided by: Bohdan Chushak
+- config.yaml keys: fields.*, allowed_features, month_of_loss_models, flood_zone_groups, occupancy_groups
+- Decision: Field names confirmed against the saved v3 dictionaries (worksheet: docs/field_review_1_4.md). Claims: payout netBuildingPaymentAmount, coverage totalBuildingInsuranceCoverage, date dateOfLoss, county countyCode, zone ratedFloodZone. Policies: coverage totalBuildingInsuranceCoverage, county = first 5 digits of censusGeoid, zone ratedFloodZone. Features: "Core 20" (zone group, building and contents coverage, occupancy group, floors, foundation, elevated, post-FIRM, construction date, original policy date, primary residence, rental, condo coverage type, policy count, CRS class, building deductible, basement type, elevation difference, latitude, longitude). Month of loss in M2 only. Flood zones grouped V / A / AH_AO / X / D; occupancy grouped single unit / 2–4 units / 5+ or condo / non-residential.
+- Options considered: Core 18 (without basement type and elevation difference, 54–71% missing); minimal 8; amountPaidOnBuildingClaim as payout (missing on 14.9% of rows); raw occupancy codes; month of loss in both models or neither.
+- Rationale: Every feature is known before the flood and present on the policies file, so M1 can price 2025 policies. Excluded as judgment calls: buildingReplacementCost (missing on exactly the rows where buildingDamageAmount is missing, so likely filled in by the adjuster), rateMethod and floodZoneCurrent (reflect current, not at-loss, rating and maps), asOfDate (metadata). Occupancy codes need grouping because training years mostly use legacy codes 1–6 and test years Risk Rating 2.0 codes 11–19.
+- Follow-ups / checks: Claim records carry later policy attributes (2-digit occupancy codes appear on 2016–2019 losses, before Risk Rating 2.0 began in Oct 2021; "RE" rate method on pre-2021 losses). Features may describe the policy after the loss, not at it. Note as a limitation. Leakage sign-off of the final feature table is still due in RUNBOOK 2.3.
+
+### 2026-11-15 — Target definition and claim cleaning (RUNBOOK 2.1)
+- Decided by: Bohdan Chushak
+- config.yaml keys: target.definition, target.drop_zero_paid, target.drop_zero_coverage, target.cap_share_at, cleaning.drop_exact_duplicate_claims
+- Decision: Target = building payout / building coverage. Drop $0-paid claims (26.1%), drop claims with $0 building coverage (5,614), cap payouts above coverage at 1.0 (468 claims). Keep claim rows that share property and loss details (separate buildings); drop exact copies (789 rows identical in every column except id and asOfDate; keep one of each).
+- Options considered: Log payout in 2025 dollars (needs CPI); keep $0 claims; drop over-coverage claims instead of capping; keep or collapse matching rows.
+- Rationale: Share of coverage needs no inflation adjustment and has the coverage cap built in. Claim frequency is estimated separately (step 6.1), so the payout model predicts size given a paid claim. Of 14,121 rows that share loss date, location, building and coverage details, 49% are condo associations (code 15) and 74% of groups have different payouts per row, so they are separate buildings in the same complex, not one claim split across rows.
+- Follow-ups / checks: Step 2.2 logs each drop count.
+
+### 2026-11-15 — Premium field and cancelled policies for the shortfall
+- Decided by: Bohdan Chushak
+- config.yaml keys: fields.policies_premium, fields.policies_premium_comparisons, cleaning.exclude_cancelled_policies
+- Decision: Headline shortfall uses totalInsurancePremiumOfThePolicy ($1.58B for Florida 2025 terms). The shortfall table also reports policyCost ($2.03B) and fullRiskPremium ($2.72B). Exclude cancelled terms (42,185, 3.7%) from both premium and exposure.
+- Options considered: policyCost or fullRiskPremium as the headline; pro-rating or keeping cancelled terms.
+- Rationale: policyCost = premium + reserve fund assessment + federal policy fee + HFIAA surcharge (verified in 100% of rows); the federal fee mostly funds administration. fullRiskPremium is FEMA's price for full risk, not money collected, so it is a benchmark. Excluding cancelled terms keeps premium and exposure consistent.
+- Follow-ups / checks: Shortfall write-up should show all three premium measures.
+
 ### 2026-11-15 — Policy year: 2025, terms starting that year (update)
 - Decided by: Bohdan Chushak
 - config.yaml keys: years.policies_year
