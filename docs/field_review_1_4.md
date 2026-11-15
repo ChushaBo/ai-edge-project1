@@ -2,7 +2,7 @@
 
 Prepared 2026-11-15 from the saved dictionaries (`docs/data_dictionaries/nfip_*_v3_fields.csv`)
 and the downloaded data (claims: 215,099 FL rows, 2010–2024; policies: 1,146,045 FL terms
-effective 2025). Recommendations are suggestions; people decide (owners A + C). Record
+effective 2025). Recommendations are suggestions; a person decides. Record
 each decision in `docs/decisions.md` and `config.yaml`.
 
 "% miss" = percent missing in our Florida data.
