@@ -22,6 +22,49 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-16 — PENDING TEAM APPROVAL: "deployment fit" option for M1/M2 (phase 6)
+- Decided by: not yet decided -- pending team approval; added as a capability only
+- config.yaml keys: deployment_fit.enabled (implementation setting, not a DECISION)
+- What it is: when true, 10_shortfall.py and 11_ian_replay.py each fit a SECOND copy
+  of M1 / M2 -- same tuned hyperparameters as the official models in
+  data/models/m1_lgbm.joblib / m2_lgbm.joblib, refit on ALL claims 2010-2024
+  (train+validation+test; M2 still excludes Helene-quarantined claims per its
+  established scope) -- saved separately as m1_deploy_lgbm.joblib /
+  m2_deploy_lgbm.joblib. It is for forward-looking pricing/scenario use on CURRENT
+  policies only. It never touches 07_train_models.py, never changes a reported test
+  metric, and the official train/validation/test split used for every number in
+  metrics_overall.csv is untouched.
+- Why it exists: the holdout diagnostic (notebooks/diag_leave_one_storm_out.py,
+  logged above) showed that coarsening location (county for lat/long) only recovers
+  about 4 points of M1's portfolio-total underprediction -- the bigger issue is that
+  2010-2021 training data never saw catastrophe-level severity at all. A model that
+  has already seen 2022-2024 (Ian, Helene, Milton) has no train/test gap left to fall
+  into when scoring a NEW policy today. Results from running it (2026-11-16, see
+  docs/overnight_report.md for the full numbers): m1_deploy's shortfall loss ratio
+  (0.511) lands close to the B1 baseline (0.508), versus the official M1's 0.278 --
+  consistent with the hypothesis, for a scenario where there is no backtest to
+  contaminate.
+- Options considered: (a) adopt deployment-fit models as the ones that feed the real
+  phase-6 shortfall and Ian-replay numbers; (b) keep them as a side-by-side comparison
+  only, as implemented tonight; (c) don't build this at all and wait for a feature-set
+  fix (lat/long constraint, monotonic constraint, etc.) before trusting any
+  forward-looking number.
+- Why this needs team sign-off, not a unilateral call: a model fit on ALL historical
+  data, including the most recent and most severe years, has no genuine held-out test
+  of its OWN forward-looking accuracy -- we can observe that it behaves more like B1
+  on the holdout-style checks run so far, but we cannot cross-validate "how well will
+  this particular refit do on 2025-2026," because by construction it has already seen
+  every labeled year available. Whether that's an acceptable way to price 2025
+  policies (vs. waiting for 5.2's feature-level fix) is a judgment call about risk
+  tolerance, not a technical one.
+- Follow-ups / checks: If the team adopts deployment-fit models for real pricing,
+  write that decision here with a new entry (superseding this one) and update
+  CLAUDE.md's "Current status." The m2_deploy variant used in the Ian replay
+  (src/11_ian_replay.py) is additionally CIRCULAR for that specific scenario (Ian's
+  own 2022 claims are inside its training data), flagged there and in
+  outputs/tables/ian_replay_assumptions.md -- do not read m2_deploy's Ian-replay
+  number as validated accuracy, even if deployment fit is otherwise adopted.
+
 ### 2026-11-15 — OPEN ITEM for RUNBOOK 5.2: M1 badly underpredicts the test portfolio total
 - Decided by: not yet decided -- open item for human review (RUNBOOK 5.2)
 - config.yaml keys: none changed; this is a finding from src/07_train_models.py's first
