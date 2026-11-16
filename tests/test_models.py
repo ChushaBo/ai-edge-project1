@@ -43,6 +43,12 @@ def test_encode_features_keeps_nullable_na_and_coerces_numerics():
     np.testing.assert_array_equal(out["elevatedBuildingIndicator"].to_numpy(), [1.0, 0.0, np.nan])
 
 
+def test_county_from_geoid_takes_first_five_digits():
+    out = models.county_from_geoid(pd.Series(["120860059013", "120350601063", None]))
+    assert out.tolist()[:2] == ["12086", "12035"]
+    assert pd.isna(out.iloc[2])
+
+
 def test_m1_features_exclude_month_and_text():
     assert "month_of_loss" not in models.M1_FEATURES
     assert not any(c.startswith(("txt_pc", "txtm_pc")) for c in models.M1_FEATURES)

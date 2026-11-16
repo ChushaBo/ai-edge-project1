@@ -108,6 +108,8 @@ sources:
   # NWS zone-to-county correlation files (bpDDmmYY.dbx), discovered from this page.
   nws_zone_county_page: https://www.weather.gov/gis/ZoneCounty
   nws_zone_county_base: https://www.weather.gov/source/gis/Shapefiles/County/
+  # Census cartographic boundary file (counties, 1:500k), for the shortfall choropleth.
+  census_county_url: https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_county_500k.zip
 
 years:
   claims_start: 2010     # DECISION: first year of loss to include (int); storms use the same range

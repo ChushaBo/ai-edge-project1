@@ -36,14 +36,10 @@ Outputs:
 import pandas as pd
 
 from utils.config import get_path, load_config, require
-from utils.io import write_parquet_atomic  # noqa: F401 (kept for parity with other scripts' imports)
 from utils.log import get_logger, log_rows
+from utils.models import county_from_geoid
 
 logger = get_logger("09_frequency")
-
-
-def county_from_geoid(geoid: pd.Series) -> pd.Series:
-    return geoid.astype("string").str.slice(0, 5)
 
 
 def credibility_blend(n: pd.Series, raw: pd.Series, prior: pd.Series, k: float) -> tuple[pd.Series, pd.Series]:
