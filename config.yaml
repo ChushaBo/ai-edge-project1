@@ -239,6 +239,10 @@ storm_event_types:
 
 embedding:
   model: sentence-transformers/all-MiniLM-L6-v2  # DECISION: sentence-transformers model name
+  # Implementation settings (not decisions). The model reads at most 256 tokens, so
+  # each narrative piece is split into chunks of <= chunk_words words before embedding.
+  chunk_words: 150
+  batch_size: 64
 
 pca:
   n_components: 24       # DECISION: PCA dimensions for text embeddings (int); fit on train only
