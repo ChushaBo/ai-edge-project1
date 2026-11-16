@@ -216,6 +216,18 @@ match_window:
 
 # DECISION: list of NOAA EVENT_TYPE values to keep. Verify exact spellings against
 # storms_fl.parquet (checked after step 1.3 on 2026-11-15).
+# Claims set aside until a person revisits them. Rows stay in claims_with_text.parquet
+# with quarantined = true; steps 06+ skip them while enabled (both M1 and M2, so the
+# models are scored on the same claims). Set enabled: false to bring them back.
+quarantine:
+  enabled: true          # DECISION: temporary, 2026-11-15 (docs/decisions.md)
+  rules:
+    - name: helene_noaa_gap
+      reason: "NOAA 2024 details file has no Hurricane Helene events for Tampa Bay counties; claims cannot be matched to a narrative"
+      loss_date_from: 2024-09-24
+      loss_date_to: 2024-09-30
+      only_unmatched: true
+
 storm_event_types:
   - Flood
   - Flash Flood
