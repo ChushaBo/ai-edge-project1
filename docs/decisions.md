@@ -22,6 +22,14 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Match quality review (RUNBOOK 3.2)
+- Decided by: Bohdan Chushak
+- config.yaml keys: match_window.days_before, match_window.days_after (unchanged, ±3 days)
+- Decision: Match quality accepted. All 20 spot-check claims marked plausible ("yes" in outputs/tables/match_spot_check.csv).
+- Options considered: Narrowing or widening the window; not needed.
+- Rationale: Each narrative describes the storm that hit the claim's county on its loss date (Rina remnants 2011, Matthew 2016, Irma 2017, Michael 2018, Sally and Eta 2020, Ian and Nicole 2022, Idalia and an April 2023 rain flood, Helene and Milton 2024). Match rate 96.7% excluding quarantined claims, above the ~70% threshold.
+- Follow-ups / checks: The Helene quarantine (entry below) is still open.
+
 ### 2026-11-15 — Quarantine Helene claims with no NOAA narrative (temporary)
 - Decided by: Bohdan Chushak
 - config.yaml keys: quarantine.enabled, quarantine.rules

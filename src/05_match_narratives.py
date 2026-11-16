@@ -136,15 +136,29 @@ def main() -> None:
     rates.to_csv(tables / "match_rates.csv", index=False)
     mapping.to_csv(tables / "event_county_mapping.csv", index=False)
 
+    spot_path = tables / "match_spot_check.csv"
     spot = out[out["has_narrative"]].sample(n=20, random_state=int(require(cfg, "random_seed")))
     spot = spot.assign(
         date_of_loss=spot[date_col].dt.strftime("%Y-%m-%d"),
         narrative_excerpt=spot["narrative"].str.slice(0, EXCERPT_CHARS).str.replace(r"\s+", " ", regex=True),
-        plausible="",  # for the human reviewer (RUNBOOK 3.2): yes / no / unsure
+        plausible=keep_reviews(spot_path, spot["id"]),  # human reviewer (RUNBOOK 3.2): yes / no / unsure
     )[["id", "date_of_loss", county_col, "split", "n_matched_events", "matched_event_types",
        "narrative_excerpt", "plausible"]]
-    spot.sort_values("date_of_loss").to_csv(tables / "match_spot_check.csv", index=False)
+    spot.sort_values("date_of_loss").to_csv(spot_path, index=False)
     logger.info("Saved match_rates.csv, event_county_mapping.csv, match_spot_check.csv to %s", tables)
+
+
+def keep_reviews(path, ids: pd.Series) -> list[str]:
+    """Reviewer answers already in the spot-check file, by claim id, so a rerun of this
+    script never erases the human review. New claims get an empty answer."""
+    if not path.exists():
+        return [""] * len(ids)
+    old = pd.read_csv(path, dtype={"plausible": "string"})
+    answers = dict(zip(old["id"], old["plausible"].fillna("")))
+    kept = sum(bool(answers.get(i)) for i in ids)
+    if kept:
+        logger.info("Kept %d existing reviewer answers in %s", kept, path.name)
+    return [answers.get(i, "") for i in ids]
 
 
 if __name__ == "__main__":

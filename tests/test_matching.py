@@ -129,3 +129,16 @@ def test_exclude_quarantined_respects_enabled_switch():
     out = _quarantine_frame()
     assert matching.exclude_quarantined(out, {"quarantine": {"enabled": True}})["id"].tolist() == [2, 3]
     assert len(matching.exclude_quarantined(out, {"quarantine": {"enabled": False}})) == 4
+
+
+def test_spot_check_rerun_keeps_reviewer_answers(tmp_path):
+    import importlib.util
+    from utils.config import REPO_ROOT
+    spec = importlib.util.spec_from_file_location("match05", REPO_ROOT / "src" / "05_match_narratives.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+
+    path = tmp_path / "match_spot_check.csv"
+    assert script.keep_reviews(path, pd.Series([1, 2])) == ["", ""]  # no file yet
+    pd.DataFrame({"id": [1, 2], "plausible": ["yes", None]}).to_csv(path, index=False)
+    assert script.keep_reviews(path, pd.Series([2, 1, 3])) == ["", "yes", ""]

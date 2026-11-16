@@ -39,10 +39,11 @@ mapping is in `config.yaml` under `fields`.
 
 Update this section whenever a RUNBOOK step is finished.
 
-- Done: RUNBOOK 0.1–3.1. Scripts 01–05 are implemented; all decisions so far are in
+- Done: RUNBOOK 0.1–3.2. Scripts 01–05 are implemented; all decisions so far are in
   `config.yaml` and logged in `docs/decisions.md` (field review: `docs/field_review_1_4.md`).
-- Next: **3.2** (human: review `outputs/tables/match_spot_check.csv`), then **4.1**
-  (`src/06_embed_text.py`).
+- Next: **4.1** (`src/06_embed_text.py`). Per the embedding decision in
+  `docs/decisions.md`, embed each narrative separately and average per claim (the model
+  truncates inputs at 256 tokens), and fit PCA on training rows only.
 - Quarantine: 46,971 Helene claims (Sept 24–30, 2024) have no NOAA narrative because
   NOAA's 2024 file lacks Helene events for the Tampa Bay counties. They are flagged
   `quarantined` in `claims_with_text.parquet`; steps 06+ must call
