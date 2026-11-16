@@ -39,18 +39,19 @@ mapping is in `config.yaml` under `fields`.
 
 Update this section whenever a RUNBOOK step is finished.
 
-- Done: RUNBOOK 0.1–2.3. Scripts 01–04 are implemented; all decisions so far are in
+- Done: RUNBOOK 0.1–3.2. Scripts 01–05 are implemented; all decisions so far are in
   `config.yaml` and logged in `docs/decisions.md` (field review: `docs/field_review_1_4.md`).
-- Next: **3.1** (`src/05_match_narratives.py`). Known issues from step 1.3:
-  - About 11% of zone-coded flood events (30–35% in 2010–2014) use zone codes that
-    are not in the current NWS zone files (zones were renumbered). Fall back to
-    matching `CZ_NAME` to a county name.
-  - NOAA begin/end times are local time; claim `dateOfLoss` is UTC midnight. Compare
-    calendar dates.
-  - Hurricanes are `Hurricane (Typhoon)` in NOAA data (config already uses this).
+- Next: **4.1** (`src/06_embed_text.py`). Per the embedding decision in
+  `docs/decisions.md`, embed each narrative separately and average per claim (the model
+  truncates inputs at 256 tokens), and fit PCA on training rows only.
+- Quarantine: 46,971 Helene claims (Sept 24–30, 2024) have no NOAA narrative because
+  NOAA's 2024 file lacks Helene events for the Tampa Bay counties. They are flagged
+  `quarantined` in `claims_with_text.parquet`; steps 06+ must call
+  `utils.matching.exclude_quarantined()` while `quarantine.enabled` is true. Revisit
+  before 5.1.
 - Open for human review: cleaning defaults in `config.yaml` (`cleaning.building_age_years`,
   `cleaning.min_policy_tenure_years`).
-- Fresh clone: `data/` is not in git. Run `src/01`–`04` to rebuild it (02 downloads a
+- Fresh clone: `data/` is not in git. Run `src/01`–`05` to rebuild it (02 downloads a
   3.7 GB bulk file once), or `bash run_all.sh` once the later scripts exist.
 
 ## Repository layout

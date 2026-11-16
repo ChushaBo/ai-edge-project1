@@ -22,6 +22,30 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Match quality review (RUNBOOK 3.2)
+- Decided by: Bohdan Chushak
+- config.yaml keys: match_window.days_before, match_window.days_after (unchanged, ±3 days)
+- Decision: Match quality accepted. All 20 spot-check claims marked plausible ("yes" in outputs/tables/match_spot_check.csv).
+- Options considered: Narrowing or widening the window; not needed.
+- Rationale: Each narrative describes the storm that hit the claim's county on its loss date (Rina remnants 2011, Matthew 2016, Irma 2017, Michael 2018, Sally and Eta 2020, Ian and Nicole 2022, Idalia and an April 2023 rain flood, Helene and Milton 2024). Match rate 96.7% excluding quarantined claims, above the ~70% threshold.
+- Follow-ups / checks: The Helene quarantine (entry below) is still open.
+
+### 2026-11-15 — Quarantine Helene claims with no NOAA narrative (temporary)
+- Decided by: Bohdan Chushak
+- config.yaml keys: quarantine.enabled, quarantine.rules
+- Decision: Flag, but keep, the 46,971 claims with loss dates 2024-09-24 to 2024-09-30 that have no matched narrative (quarantined = true in claims_with_text.parquet). Steps 06+ skip them while quarantine.enabled is true, for both M1 and M2. To be revisited.
+- Options considered: Accept the gap and also score M2 on matched claims only; attach Helene narratives from other Florida counties on the same dates (flagged); drop the claims from M2 only.
+- Rationale: NOAA's 2024 details file (c20260728) has no Helene events for the Tampa Bay counties (Pinellas, Hillsborough, Manatee, Pasco, Sarasota), though it has their Milton events (100% matched). Widening the match window would attach Milton narratives (13 days later) to Helene claims. Quarantined claims are mostly Pinellas 20,700, Hillsborough 6,729, Manatee 4,647, Pasco 3,952, Sarasota 3,872.
+- Follow-ups / checks: Revisit before step 5.1. Removing 46,971 of 112,573 test claims changes the test set (now 65,602) and drops much of Helene's loss, so results must say so. Check whether NOAA publishes a newer 2024 file with these events.
+
+### 2026-11-15 — Narrative matching results (RUNBOOK 3.1)
+- Decided by: Bohdan Chushak
+- config.yaml keys: match_window.days_before, match_window.days_after (unchanged, ±3 days)
+- Decision: Keep the ±3-day window. Zone-coded events map to counties through the NWS zone files, checked against the county named in CZ_NAME; renumbered zones fall back to the name.
+- Options considered: Widening the window (rejected: the low 2024 rate is missing NOAA data, not a window problem).
+- Rationale: Of 1,450 zone-coded flood events, 1,265 map by zone (zone and name agree in every case where both exist), 183 by name (zone number not in current files) and 2 by zone only. Match rate 68.1% overall (108,244 of 158,908); 96.7% excluding the quarantined Helene claims. Train 93.9%, validation 95.5%, test 57.4% (98.5% excluding quarantine). By year, 75–99% except 2010 (41%, 261 claims) and 2024 (28.8%, the Helene gap).
+- Follow-ups / checks: Human spot check of 20 claims (RUNBOOK 3.2): outputs/tables/match_spot_check.csv, column "plausible".
+
 ### 2026-11-15 — Leakage sign-off on the feature table (RUNBOOK 2.3)
 - Decided by: Bohdan Chushak
 - config.yaml keys: allowed_features, derived_features, month_of_loss_models
@@ -92,7 +116,7 @@ Copy this block for each decision.
 - Decision: Match storm events whose begin date is within ±3 days of the claim's date of loss, in the same county.
 - Options considered: ±1 day (fewer false matches, more missed matches); ±5 or ±7 days (more matches, more noise).
 - Rationale: NFIP date of loss and NOAA event begin dates don't always align; hurricanes and their flooding span several days, and rain-driven flooding can lag. Three days captures most legitimate matches without attaching unrelated summer flash-flood reports, which are frequent in Florida.
-- Follow-ups / checks: Review overall and per-year match rate and the 20-claim spot check in step 3.2. Widen if the match rate is below ~70% after fixing zone mapping; narrow if spot checks show unrelated storms. Match rate: [fill after step 3.1].
+- Follow-ups / checks: Review overall and per-year match rate and the 20-claim spot check in step 3.2. Widen if the match rate is below ~70% after fixing zone mapping; narrow if spot checks show unrelated storms. Match rate (step 3.1): 68.1% overall, 96.7% excluding quarantined Helene claims; see the narrative matching entry.
 
 ### 2026-11-15 — Storm event types
 - Decided by: Bohdan Chushak
@@ -115,7 +139,7 @@ Copy this block for each decision.
 - config.yaml keys: pca.n_components
 - Decision: Reduce embeddings to 24 dimensions with PCA fit on training rows only.
 - Options considered: 8, 16, 32 dimensions; using all 384 dimensions (rejected: would swamp ~12–15 tabular features and invite overfitting).
-- Rationale: Many claims share the same storm narrative, so the number of distinct narratives in training is far smaller than the number of claims, likely in the hundreds. Text features can only learn from those, so a small dimension count is appropriate. 24 is roughly twice the tabular feature count. Distinct training narratives: [fill after step 3.1]. Explained variance: [fill after step 4.1].
+- Rationale: Many claims share the same storm narrative, so the number of distinct narratives in training is far smaller than the number of claims, likely in the hundreds. Text features can only learn from those, so a small dimension count is appropriate. 24 is roughly twice the tabular feature count. Distinct training narratives (step 3.1): 525. Explained variance: [fill after step 4.1].
 - Follow-ups / checks: Compare 8, 16, and 32 on the validation set and keep the best performer.
 
 ### 2026-11-15 — Random seed
