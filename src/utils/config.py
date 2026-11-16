@@ -9,7 +9,9 @@ Usage in a pipeline script:
     start = require(cfg, "years.claims_start")
 """
 
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pandas as pd
@@ -68,3 +70,14 @@ def get_path(cfg: dict[str, Any], name: str, create: bool = True) -> Path:
     if create:
         path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def load_pipeline_script(name: str) -> ModuleType:
+    """Import a numbered pipeline script (e.g. "07_train_models") as a module, so a
+    later script can reuse its functions (fit_b1, final_fit, predict_clipped, ...)
+    without duplicating them. A leading-digit filename can't be imported by name, so
+    this loads it directly from src/<name>.py."""
+    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / "src" / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
