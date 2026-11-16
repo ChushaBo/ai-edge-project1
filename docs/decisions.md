@@ -22,6 +22,14 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — Text embedding implementation (RUNBOOK 4.1)
+- Decided by: Bohdan Chushak
+- config.yaml keys: embedding.chunk_words, embedding.batch_size (implementation settings)
+- Decision: Each narrative piece (episode or event) is split into chunks of at most 150 words, embedded, and averaged into a piece vector; the claim vector is the mean of its piece vectors. The masked variant replaces dollar amounts with [AMOUNT] and counts of damaged things (homes, structures, businesses...) with [NUM]; rainfall, wind, surge heights and dates are kept. Quarantined claims are skipped.
+- Options considered: Embedding the combined narrative as one input (the model would drop everything after ~200 words).
+- Rationale: Follows the embedding-model decision above. Masking changes the text of 95,128 of 108,244 claims with narratives (88%), because hurricane summaries usually quote damage estimates, so M2_masked is a real test of whether text adds value beyond leaked damage figures.
+- Follow-ups / checks: RUNBOOK 5.1 compares M2 and M2_masked.
+
 ### 2026-11-15 — Match quality review (RUNBOOK 3.2)
 - Decided by: Bohdan Chushak
 - config.yaml keys: match_window.days_before, match_window.days_after (unchanged, ±3 days)
@@ -132,14 +140,14 @@ Copy this block for each decision.
 - Decision: sentence-transformers all-MiniLM-L6-v2 (384 dimensions).
 - Options considered: all-mpnet-base-v2 (better quality, several times slower); fine-tuning a model (not feasible in one week).
 - Rationale: Small, fast on a laptop CPU, widely used, solid general-purpose embeddings. The goal is to test whether storm descriptions add predictive value, not to build a state-of-the-art text model.
-- Follow-ups / checks: The model reads only the first 256 tokens (~200 words) of each input and silently truncates the rest; combined hurricane narratives can be much longer. Update step 4.1 to embed each narrative separately and average the vectors per claim. Try all-mpnet-base-v2 only if time remains. Embedding runtime: [fill after step 4.1].
+- Follow-ups / checks: The model reads only the first 256 tokens (~200 words) of each input and silently truncates the rest; combined hurricane narratives can be much longer. Update step 4.1 to embed each narrative separately and average the vectors per claim. Try all-mpnet-base-v2 only if time remains. Embedding runtime (step 4.1): 3.6 minutes on a laptop CPU for 3,514 unique chunks (2,628 narrative pieces; 252 pieces longer than 150 words split into chunks), then 3.5 s on reruns from the cache. Implemented as decided: each piece embedded separately and averaged per claim.
 
 ### 2026-11-15 — PCA dimensions for text features
 - Decided by: Bohdan Chushak
 - config.yaml keys: pca.n_components
 - Decision: Reduce embeddings to 24 dimensions with PCA fit on training rows only.
 - Options considered: 8, 16, 32 dimensions; using all 384 dimensions (rejected: would swamp ~12–15 tabular features and invite overfitting).
-- Rationale: Many claims share the same storm narrative, so the number of distinct narratives in training is far smaller than the number of claims, likely in the hundreds. Text features can only learn from those, so a small dimension count is appropriate. 24 is roughly twice the tabular feature count. Distinct training narratives (step 3.1): 525. Explained variance: [fill after step 4.1].
+- Rationale: Many claims share the same storm narrative, so the number of distinct narratives in training is far smaller than the number of claims, likely in the hundreds. Text features can only learn from those, so a small dimension count is appropriate. 24 is roughly twice the tabular feature count. Distinct training narratives (step 3.1): 525. Explained variance (step 4.1): 24 components explain 87.5% (raw text) and 87.3% (masked text); PCA fit on the 36,314 training claims with a narrative.
 - Follow-ups / checks: Compare 8, 16, and 32 on the validation set and keep the best performer.
 
 ### 2026-11-15 — Random seed
