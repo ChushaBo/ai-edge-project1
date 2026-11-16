@@ -131,6 +131,17 @@ def test_exclude_quarantined_respects_enabled_switch():
     assert len(matching.exclude_quarantined(out, {"quarantine": {"enabled": False}})) == 4
 
 
+def test_exclude_quarantined_is_model_scoped():
+    # Decided 2026-11-15: quarantine applies to the text models only, not baselines or M1.
+    out = _quarantine_frame()
+    cfg = {"quarantine": {"enabled": True, "applies_to": ["M2", "M2_masked"]}}
+    assert matching.exclude_quarantined(out, cfg, model="M1")["id"].tolist() == [1, 2, 3, 4]
+    assert matching.exclude_quarantined(out, cfg, model="M2")["id"].tolist() == [2, 3]
+    assert matching.exclude_quarantined(out, cfg, model="M2_masked")["id"].tolist() == [2, 3]
+    # model=None ignores applies_to and drops unconditionally on `enabled` (06's table).
+    assert matching.exclude_quarantined(out, cfg, model=None)["id"].tolist() == [2, 3]
+
+
 def test_spot_check_rerun_keeps_reviewer_answers(tmp_path):
     import importlib.util
     from utils.config import REPO_ROOT

@@ -159,7 +159,8 @@ def main() -> None:
                              columns=["id", "split", "has_narrative", "quarantined",
                                       "matched_episode_ids", "matched_event_ids"])
     log_rows(logger, claims, "claims_with_text")
-    claims = exclude_quarantined(claims, cfg).reset_index(drop=True)
+    # Text features only ever feed M2 / M2_masked (both share the same quarantine scope).
+    claims = exclude_quarantined(claims, cfg, model="M2").reset_index(drop=True)
     log_rows(logger, claims, "after excluding quarantined claims")
     storms = pd.read_parquet(get_path(cfg, "raw") / "storms_fl.parquet",
                              columns=["EPISODE_ID", "EVENT_ID", "EPISODE_NARRATIVE", "EVENT_NARRATIVE"])
