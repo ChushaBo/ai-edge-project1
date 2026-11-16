@@ -16,15 +16,19 @@ _DOLLARS = re.compile(
 # Things that get damaged, counted in narratives ("over 1,200 homes", "30 mobile homes").
 _DAMAGE_NOUNS = (r"homes?|houses?|residences?|dwellings?|buildings?|structures?|businesses|"
                  r"properties|apartments?|units?|condos?|trailers?|vehicles?|cars?|boats?")
+# A number followed by a unit is a storm measurement (surge, rainfall, wind), not a count.
+_NOT_A_MEASUREMENT = (r"(?!\s*-?\s*(?:feet|foot|ft|inch(?:es)?|in|mph|knots?|kts?|miles?|mi|"
+                      r"meters?|percent|%|degrees?)\b)")
 # A count directly before (up to two words between) a damaged-thing noun.
 _COUNT_BEFORE_NOUN = re.compile(
-    rf"\b\d[\d,]*\+?(?=(?:\s+[A-Za-z-]+){{0,2}}\s+(?:{_DAMAGE_NOUNS})\b)", re.IGNORECASE)
+    rf"(?<![\d.])\d[\d,]*(?:\.\d+)?\+?{_NOT_A_MEASUREMENT}"
+    rf"(?=(?:\s+[A-Za-z-]+){{0,2}}\s+(?:{_DAMAGE_NOUNS})\b)", re.IGNORECASE)
 # A count after a damage verb ("damaged 45", "destroyed over 100"); the verb and any
 # qualifier are kept (groups 1-2), only the number (group 3) is replaced.
 _COUNT_AFTER_VERB = re.compile(
     r"\b(damaged|destroyed|flooded|inundated|affected|impacted)"
     r"(\s+(?:over\s+|about\s+|around\s+|approximately\s+|nearly\s+|more\s+than\s+)?)"
-    r"(\d[\d,]*)", re.IGNORECASE)
+    rf"(\d[\d,]*(?:\.\d+)?){_NOT_A_MEASUREMENT}", re.IGNORECASE)
 
 
 def mask_damage_numbers(text: str) -> str:

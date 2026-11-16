@@ -34,6 +34,17 @@ def test_mask_keeps_storm_measurements():
     assert mask_damage_numbers(text) == text
 
 
+@pytest.mark.parametrize("text", [
+    "Storm surge of 3 feet into homes along the bay.",
+    "Rainfall of 10 inches flooded homes.",
+    "A 4-foot surge inundated homes.",
+    "Waters inundated 2 feet deep in some neighborhoods.",
+    "Surge of 2.5 ft entered several homes.",
+])
+def test_mask_keeps_measurements_next_to_damage_words(text):
+    assert mask_damage_numbers(text) == text
+
+
 def test_chunks_never_exceed_limit_and_keep_all_words():
     text = "Short one. " + " ".join(["word"] * 400) + ". Last sentence here."
     chunks = chunk_words(text, 150)

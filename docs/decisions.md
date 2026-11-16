@@ -25,9 +25,9 @@ Copy this block for each decision.
 ### 2026-11-15 — Text embedding implementation (RUNBOOK 4.1)
 - Decided by: Bohdan Chushak
 - config.yaml keys: embedding.chunk_words, embedding.batch_size (implementation settings)
-- Decision: Each narrative piece (episode or event) is split into chunks of at most 150 words, embedded, and averaged into a piece vector; the claim vector is the mean of its piece vectors. The masked variant replaces dollar amounts with [AMOUNT] and counts of damaged things (homes, structures, businesses...) with [NUM]; rainfall, wind, surge heights and dates are kept. Quarantined claims are skipped.
+- Decision: Each narrative piece (episode or event) is split into chunks of at most 150 words, embedded, and averaged into a piece vector; the claim vector is the mean of its piece vectors. The masked variant replaces dollar amounts with [AMOUNT] and counts of damaged things (homes, structures, businesses...) with [NUM]; rainfall, wind, surge heights and dates are kept (a number followed by a unit such as feet, inches or mph is never masked). Quarantined claims are skipped.
 - Options considered: Embedding the combined narrative as one input (the model would drop everything after ~200 words).
-- Rationale: Follows the embedding-model decision above. Masking changes the text of 95,128 of 108,244 claims with narratives (88%), because hurricane summaries usually quote damage estimates, so M2_masked is a real test of whether text adds value beyond leaked damage figures.
+- Rationale: Follows the embedding-model decision above. Masking changes the text of 95,126 of 108,244 claims with narratives (88%), because hurricane summaries usually quote damage estimates, so M2_masked is a real test of whether text adds value beyond leaked damage figures.
 - Follow-ups / checks: RUNBOOK 5.1 compares M2 and M2_masked.
 
 ### 2026-11-15 — Match quality review (RUNBOOK 3.2)
