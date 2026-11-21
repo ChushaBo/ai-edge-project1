@@ -4,7 +4,7 @@ Context and rules for Claude Code. Read this before every task.
 
 ## Project summary
 
-15.071 (The AI Edge) Project 1, due Nov 20, 2026. We predict the building payout of
+15.071 (The AI Edge) Project 1, due Nov 25, 2026 (moved from Nov 20). We predict the building payout of
 National Flood Insurance Program (NFIP) claims in Florida and compare against a
 flood-zone-only benchmark. Storm narratives from NOAA Storm Events are embedded with a
 pretrained sentence model as an unstructured-data (deep learning) component. Predicted
@@ -39,20 +39,38 @@ mapping is in `config.yaml` under `fields`.
 
 Update this section whenever a RUNBOOK step is finished.
 
-- Done: RUNBOOK 0.1–4.1. Scripts 01–06 are implemented; all decisions so far are in
-  `config.yaml` and logged in `docs/decisions.md` (field review: `docs/field_review_1_4.md`).
-- Next: **5.1** (`src/07_train_models.py`). Before it: decide whether to keep the Helene
-  quarantine (below). Text features for M2 are in `data/processed/text_features.parquet`
-  (`txt_pc*` raw, `txtm_pc*` masked); the fitted PCAs are in `data/models/`.
-- Quarantine: 46,971 Helene claims (Sept 24–30, 2024) have no NOAA narrative because
-  NOAA's 2024 file lacks Helene events for the Tampa Bay counties. They are flagged
-  `quarantined` in `claims_with_text.parquet`; steps 06+ must call
-  `utils.matching.exclude_quarantined()` while `quarantine.enabled` is true. Revisit
-  before 5.1.
-- Open for human review: cleaning defaults in `config.yaml` (`cleaning.building_age_years`,
-  `cleaning.min_policy_tenure_years`).
-- Fresh clone: `data/` is not in git. Run `src/01`–`06` to rebuild it (02 downloads a
-  3.7 GB bulk file once), or `bash run_all.sh` once the later scripts exist.
+- Done: RUNBOOK 0.1–6.3. Scripts 01–11 are all implemented and tested (`pytest -q`
+  passes, 86 tests). **Not yet merged to `main`** — sitting on two branches,
+  `jason/5.1-train-models` (07, RUNBOOK 5.1) and `jason/overnight` (08–11, RUNBOOK
+  5.3–6.3), both pushed, neither has an open PR yet. All decisions are in
+  `config.yaml` and logged in `docs/decisions.md`.
+- **Next, blocking: RUNBOOK 5.2** (human sign-off on M1/M2). Open item logged in
+  `docs/decisions.md`: M1 has the best per-claim MAE of any model but underpredicts
+  the test portfolio total by 57.6%, because latitude/longitude let it memorize
+  pre-2020 location averages that don't extrapolate to Ian/Helene/Milton severity —
+  a named, textbook limitation of tree ensembles (`docs/course-checklist.md`,
+  Lecture 5: "a tree can never predict a value outside the range in the training
+  data"). Decide: present M1 as-is with the limitation documented, fix the feature
+  set (e.g. coarsen lat/long to county — a holdout diagnostic in
+  `notebooks/diag_leave_one_storm_out.py` shows this recovers only ~4 points) and
+  rerun 07–11, or adopt the "deployment fit" comparison models (pending approval,
+  see below). Whatever is decided, phases 6–7 downstream need rerunning if M1/M2
+  themselves change.
+- Also pending team approval: the "deployment fit" option (`config.yaml:
+  deployment_fit.enabled`) — a second copy of M1/M2 refit on all claims 2010–2024
+  instead of just train+validation, used only in 10_shortfall.py/11_ian_replay.py,
+  never touching 07's reported test metrics. Logged in `docs/decisions.md`.
+- `docs/course-checklist.md` has a full review of the pipeline against the 15.071
+  lecture decks' recommendations (splits, baselines, metrics, CV, regularization,
+  interpretability, business framing), prioritized. Two cheap, high-value fixes
+  flagged there and not yet done: an in-sample (train) row in
+  `outputs/tables/metrics_overall.csv` alongside the existing test rows, and
+  `lambda_l1`/`lambda_l2` in 07's LightGBM search grid (config.yaml `models.
+  search_grid`) — neither is in yet.
+- Due Nov 25, 2026. Phase 7 (reproducibility pass, README, slides, video) has not
+  started.
+- Fresh clone: `data/` is not in git. Run `src/01`–`11` to rebuild it (02 downloads a
+  3.7 GB bulk file once), or `bash run_all.sh`.
 
 ## Repository layout
 
