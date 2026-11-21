@@ -7,39 +7,44 @@ baselines.joblib from 07_train_models.py -- no refit, nothing retrained here or
 anywhere downstream.
 
 Method, on test_full (112,573 claims, both models scored with no quarantine
-restriction since neither M1 nor B1 is in quarantine.applies_to):
-  - Decile table: assign each claim a decile 1-10 by RANK of its predicted share
-    (ties broken by original row order, so every decile has exactly n/10 claims --
-    B1 only takes 5 distinct values statewide, so a value-based qcut would not give
-    10 usable groups). Report, per decile: n, mean predicted share, mean actual
-    share, total actual payout ($).
-  - Spearman rank correlation between predicted and actual share: unlike MAE/RMSE,
-    this is invariant to a model being systematically biased (over- or
-    under-predicting by a constant factor) and only measures whether the ORDERING
-    of claims by predicted risk matches their actual ordering.
+restriction since neither M1 nor B1 is in quarantine.applies_to). Every metric below
+is computed TWICE, once sorting/ranking by predicted SHARE and once by predicted
+DOLLARS (predicted share x coverage) -- labeled by the `sort_by` column in both
+output tables, so both are kept, not just the latest:
+  - Decile table: assign each claim a decile 1-10 by RANK of the sort key (ties
+    broken by original row order, so every decile has exactly n/10 claims -- B1
+    only takes ~4-5 distinct predicted-share values statewide, so a value-based
+    qcut would not give 10 usable groups). Report, per decile: n, mean predicted
+    share, mean actual share, total actual payout ($), and the share of that
+    decile's claims paying over $1M (the concentration check requested after the
+    first run: which decile holds the biggest claims).
+  - Spearman rank correlation between the sort key and the matching actual value
+    (share vs. share, or dollars vs. dollars): unlike MAE/RMSE, this is invariant to
+    a model being systematically biased (over- or under-predicting by a constant
+    factor) and only measures whether the ORDERING matches.
   - Gini coefficient for risk ranking (the standard actuarial definition, e.g.
     Goldburd, Khare & Tevet, "Generalized Linear Models for Insurance Rating"):
-    sort claims ascending by predicted share, plot cumulative % of actual payout
+    sort claims ascending by the sort key, plot cumulative % of actual payout
     against cumulative % of claims (a Lorenz curve), Gini = 1 - 2 x (area under that
     curve). 0 = no separation between low- and high-risk claims; higher = better
-    separation. Computed in the same $ units for both models so they are directly
-    comparable.
+    separation. Always computed in $ units (actual payout), only the SORT ORDER
+    changes between the two versions -- this is the metric that mattered most: the
+    first run sorted by predicted SHARE only, which ignores coverage size entirely
+    and is why it disagreed with the share-based Spearman result.
 
 Inputs:
   - data/models/m1_lgbm.joblib, baselines.joblib (both frozen, from 07_train_models.py)
   - data/interim/claims_with_text.parquet (test_full)
   - config.yaml: fields.*, target.cap_share_at, random_seed, paths.*
 Outputs:
-  - outputs/tables/ranking_check_deciles.csv
-  - outputs/tables/ranking_check_summary.csv (Spearman rho, Gini, by model)
-  - outputs/figures/ranking_check_lift_chart.png
+  - outputs/tables/ranking_check_deciles.csv (sort_by column: predicted_share /
+    predicted_dollar)
+  - outputs/tables/ranking_check_summary.csv (Spearman rho, Gini, by model x sort_by)
+  - outputs/figures/ranking_check_lift_chart.png (share-sort only, from the first run;
+    not regenerated here -- data only, per instruction)
 """
 
 import joblib
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
@@ -50,8 +55,6 @@ from utils.models import M1_FEATURES
 
 logger = get_logger("08b_ranking_check")
 N_DECILES = 10
-INK, SECONDARY_INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#fcfcfb"
-MODEL_COLORS = {"M1": "#1baf7a", "B1": "#eb6834"}
 
 
 def assign_deciles(pred: np.ndarray) -> np.ndarray:
@@ -61,16 +64,18 @@ def assign_deciles(pred: np.ndarray) -> np.ndarray:
     return pd.qcut(ranks, N_DECILES, labels=False) + 1
 
 
-def decile_table(df: pd.DataFrame, pred: np.ndarray, target_col: str, cov_col: str, model_name: str) -> pd.DataFrame:
-    d = df.assign(decile=assign_deciles(pred), pred_share=pred,
+def decile_table(df: pd.DataFrame, pred_share: np.ndarray, sort_key: np.ndarray, target_col: str,
+                 cov_col: str, model_name: str, sort_by: str) -> pd.DataFrame:
+    d = df.assign(decile=assign_deciles(sort_key), pred_share=pred_share,
                  actual_dollar=df[target_col] * df[cov_col])
     out = d.groupby("decile").agg(
         n=("decile", "size"),
         mean_predicted_share=("pred_share", "mean"),
         mean_actual_share=(target_col, "mean"),
         total_actual_payout_dollar=("actual_dollar", "sum"),
+        pct_claims_over_1M=("actual_dollar", lambda s: 100 * (s > 1_000_000).mean()),
     ).reset_index()
-    out["model"] = model_name
+    out["model"], out["sort_by"] = model_name, sort_by
     return out
 
 
@@ -88,43 +93,13 @@ def gini_risk_ranking(y_actual_dollar: np.ndarray, y_pred_share: np.ndarray) -> 
     return 1 - 2 * area
 
 
-def plot_lift_chart(deciles: pd.DataFrame, path) -> None:
-    fig, ax = plt.subplots(figsize=(8, 5), facecolor=SURFACE)
-    ax.set_facecolor(SURFACE)
-    for model_name, color in MODEL_COLORS.items():
-        d = deciles[deciles["model"] == model_name].sort_values("decile")
-        ax.plot(d["decile"], d["mean_actual_share"], marker="o", color=color,
-               label=f"{model_name}: actual", linewidth=2)
-        ax.plot(d["decile"], d["mean_predicted_share"], marker="o", color=color,
-               label=f"{model_name}: predicted", linewidth=1.3, linestyle="--", alpha=0.7)
-    ax.set_xlabel("Decile of predicted risk (1 = lowest, 10 = highest)", color=SECONDARY_INK)
-    ax.set_ylabel("Mean share of building coverage", color=SECONDARY_INK)
-    ax.set_title("Lift chart: M1 vs. B1 risk ranking on test_full (112,573 claims)", color=INK, fontsize=13)
-    ax.set_xticks(range(1, N_DECILES + 1))
-    ax.tick_params(colors=MUTED)
-    ax.legend(frameon=False, fontsize=9, labelcolor=INK)
-    for spine in ("top", "right"):
-        ax.spines[spine].set_visible(False)
-    for spine in ("left", "bottom"):
-        ax.spines[spine].set_color(GRID)
-    ax.grid(axis="y", color=GRID, linewidth=0.8, zorder=0)
-    fig.text(0.5, -0.02,
-             "Source: outputs/tables/ranking_check_deciles.csv (src/08b_ranking_check.py), "
-             "frozen M1/B1 from 07_train_models.py, no refit. PROVISIONAL pending RUNBOOK 5.2.",
-             ha="center", color=MUTED, fontsize=8)
-    fig.tight_layout()
-    fig.savefig(path, dpi=150, bbox_inches="tight", facecolor=SURFACE)
-    plt.close(fig)
-    logger.info("Saved %s", path)
-
-
 def main() -> None:
     cfg = load_config()
     cap = float(require(cfg, "target.cap_share_at"))
     cov_col = require(cfg, "fields.claims_coverage")
     target_col = "target"
     zone_col = "flood_zone_group"
-    tables, figures, models_dir = get_path(cfg, "tables"), get_path(cfg, "figures"), get_path(cfg, "models")
+    tables, models_dir = get_path(cfg, "tables"), get_path(cfg, "models")
 
     m7 = load_pipeline_script("07_train_models")
     bundle_m1 = joblib.load(models_dir / "m1_lgbm.joblib")
@@ -143,36 +118,54 @@ def main() -> None:
     logger.info("B1 has only %d distinct predicted values statewide (zone means); "
                "deciles below are RANK-based (ties broken arbitrarily), not value-based", n_distinct_b1)
 
-    deciles = pd.concat([
-        decile_table(test_full, pred_m1, target_col, cov_col, "M1"),
-        decile_table(test_full, pred_b1, target_col, cov_col, "B1"),
-    ], ignore_index=True)
-    deciles = deciles[["model", "decile", "n", "mean_predicted_share", "mean_actual_share",
-                      "total_actual_payout_dollar"]].sort_values(["model", "decile"])
-    deciles.to_csv(tables / "ranking_check_deciles.csv", index=False)
-    log_rows(logger, deciles, "ranking_check_deciles.csv")
-
+    coverage = test_full[cov_col].to_numpy()
     actual_dollar = (test_full[target_col] * test_full[cov_col]).to_numpy()
+    pred_dollar_m1, pred_dollar_b1 = pred_m1 * coverage, pred_b1 * coverage
+
+    # sort_by: "predicted_share" (the first run's sort key) and "predicted_dollar"
+    # (predicted share x coverage) -- BOTH kept, not just the latest.
+    sort_keys = {
+        "predicted_share": {"M1": pred_m1, "B1": pred_b1},
+        "predicted_dollar": {"M1": pred_dollar_m1, "B1": pred_dollar_b1},
+    }
+    actual_for_spearman = {"predicted_share": test_full[target_col].to_numpy(),
+                           "predicted_dollar": actual_dollar}
+
+    deciles = pd.concat([
+        decile_table(test_full, pred, sort_keys[sort_by][name], target_col, cov_col, name, sort_by)
+        for sort_by in sort_keys for name, pred in (("M1", pred_m1), ("B1", pred_b1))
+    ], ignore_index=True)
+    deciles = deciles[["sort_by", "model", "decile", "n", "mean_predicted_share", "mean_actual_share",
+                      "total_actual_payout_dollar", "pct_claims_over_1M"]].sort_values(
+        ["sort_by", "model", "decile"])
+    deciles.to_csv(tables / "ranking_check_deciles.csv", index=False)
+    log_rows(logger, deciles, "ranking_check_deciles.csv (both sort_by versions)")
+
     summary_rows = []
-    for name, pred in (("M1", pred_m1), ("B1", pred_b1)):
-        rho, pval = spearmanr(pred, test_full[target_col].to_numpy())
-        gini = gini_risk_ranking(actual_dollar, pred)
-        summary_rows.append({"model": name, "spearman_rho": rho, "spearman_pvalue": pval, "gini": gini})
-    summary = pd.DataFrame(summary_rows)
+    for sort_by, keys in sort_keys.items():
+        for name, key in keys.items():
+            rho, pval = spearmanr(key, actual_for_spearman[sort_by])
+            gini = gini_risk_ranking(actual_dollar, key)
+            summary_rows.append({"model": name, "sort_by": sort_by, "spearman_rho": rho,
+                                "spearman_pvalue": pval, "gini": gini})
+    summary = pd.DataFrame(summary_rows)[["model", "sort_by", "spearman_rho", "spearman_pvalue", "gini"]]
     summary.to_csv(tables / "ranking_check_summary.csv", index=False)
-    logger.info("Ranking summary (test_full, frozen models, no refit):\n%s",
+    logger.info("Ranking summary (test_full, frozen models, no refit; both sort_by versions kept):\n%s",
                summary.round(4).to_string(index=False))
 
-    plot_lift_chart(deciles, figures / "ranking_check_lift_chart.png")
+    def lowest_decile_1m_pct(sort_by, model):
+        row = deciles[(deciles.sort_by == sort_by) & (deciles.model == model) & (deciles.decile == 1)]
+        return float(row["pct_claims_over_1M"].iloc[0])
 
-    m1_row, b1_row = summary[summary["model"] == "M1"].iloc[0], summary[summary["model"] == "B1"].iloc[0]
-    print("\n=== Does M1 rank risk better than B1? ===")
-    print(f"Spearman rho: M1 {m1_row['spearman_rho']:.3f} vs. B1 {b1_row['spearman_rho']:.3f} "
-         f"({'M1 higher' if m1_row['spearman_rho'] > b1_row['spearman_rho'] else 'B1 higher or tied'}); "
-         f"Gini: M1 {m1_row['gini']:.3f} vs. B1 {b1_row['gini']:.3f} "
-         f"({'M1 higher' if m1_row['gini'] > b1_row['gini'] else 'B1 higher or tied'}).")
-    print("See outputs/figures/ranking_check_lift_chart.png and "
-         "outputs/tables/ranking_check_deciles.csv for the full picture.")
+    print("\n=== Corrected: Gini sorted by predicted DOLLARS (share x coverage) ===")
+    for name in ("M1", "B1"):
+        s = summary[(summary.model == name) & (summary.sort_by == "predicted_share")].iloc[0]
+        d = summary[(summary.model == name) & (summary.sort_by == "predicted_dollar")].iloc[0]
+        print(f"{name}: Gini by predicted SHARE = {s.gini:+.3f}  |  Gini by predicted DOLLARS = {d.gini:+.3f}")
+    print("\nShare of $1M+ claims in each model's lowest-risk decile:")
+    for name in ("M1", "B1"):
+        print(f"{name}: by predicted share = {lowest_decile_1m_pct('predicted_share', name):.1f}%  |  "
+             f"by predicted dollars = {lowest_decile_1m_pct('predicted_dollar', name):.1f}%")
 
 
 if __name__ == "__main__":
