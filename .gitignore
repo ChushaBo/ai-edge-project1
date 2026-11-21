@@ -2,6 +2,16 @@
 data/
 .venv/
 
+# Copyrighted course material (lecture slide PDFs) -- never commit these.
+# docs/course-checklist.md (our own derived summary) is fine and not covered by this.
+docs/course/
+
+# Generated deliverables, not pipeline source -- keep out unless asked.
+*.pptx
+*.pdf
+!docs/data_dictionaries/*.pdf
+~$*
+
 # Python
 __pycache__/
 *.py[cod]
