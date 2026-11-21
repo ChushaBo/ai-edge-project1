@@ -106,8 +106,10 @@ other step then proceeds with no FEMA dependency. Full detail: `docs/reproducibi
 
 ## Limitations
 
-- **M1's catastrophe-severity gap is open** (above) — not yet resolved; a documented
-  decision point for the team (`docs/decisions.md`), not something silently fixed.
+- **M1's catastrophe-severity gap (above) is reported, not fixed** — a deliberate
+  decision (`docs/decisions.md`, RUNBOOK 5.2), not an oversight: a diagnostic showed a
+  proposed feature-set fix recovers only ~4 of the 57 points, too small a payoff for
+  the cost of re-verifying everything downstream before the deadline.
 - A **"deployment fit"** of M1/M2 (refit on all claims 2010-2024, not just
   train+validation) is implemented as a comparison only and is pending team approval
   before being adopted for real pricing — it has no genuine held-out test of its own.

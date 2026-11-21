@@ -22,6 +22,42 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-21 — RUNBOOK 5.2 sign-off: present M1 as-is, document the limitation (Option 1)
+- Decided by: Jason
+- config.yaml keys: none -- this closes the open item, it does not change a decision value
+- Decision: M1, M2, M2_masked, B0, and B1 are final as trained in 07_train_models.py
+  (tuned on validation, refit on train+validation, test scored once). No feature-set
+  change, no rerun. M1's catastrophe-severity gap (57.6% portfolio-total
+  underprediction on test_full, logged as an open item above) is reported plainly as
+  a limitation, not fixed before submission. The "deployment fit" models
+  (m1_deploy, m2_deploy) remain a clearly labeled secondary comparison only, not
+  adopted for the headline shortfall or Ian-replay numbers.
+- Options considered (full reasoning already in the two entries above and
+  docs/course-checklist.md):
+  1. Present M1 as-is, document the limitation. CHOSEN.
+  2. Coarsen the feature set (e.g. lat/long -> county) and rerun 07-11. Rejected for
+     now: the holdout diagnostic (notebooks/diag_leave_one_storm_out.py) already
+     showed this recovers only ~4 of 57 points -- a small, proven payoff for the
+     cost of re-verifying 08/08b/08c/09/10/11 downstream with 4 days left before
+     Nov 25.
+  3. Adopt the deployment-fit models as the headline numbers. Rejected: neither
+     m1_deploy nor m2_deploy has a genuine held-out test of its own forward-looking
+     accuracy (both are fit on all available labeled data), and m2_deploy is
+     additionally circular for the Ian replay specifically (Ian's own 2022 claims
+     are inside its training data). Reporting an unvalidated number as the headline,
+     ahead of a validated-but-limited one, runs against the project's own discipline
+     (test set used once, in-sample performance is not out-of-sample performance --
+     docs/course-checklist.md) more than it fixes anything.
+- Rationale: an explicitly diagnosed, course-grounded limitation (confirmed via
+  SHAP split-count evidence, a dollar-weighted risk-ranking check showing M1 still
+  ranks risk correctly even though miscalibrated, and a segment breakdown showing
+  the miss is broad/systemic, not niche) is a more complete and more honest piece of
+  analysis than a cleaner-looking but less-validated number. This is consistent with
+  how every other result in this project was evaluated.
+- Follow-ups / checks: README.md's "Key finding" and "Limitations" sections already
+  reflect this; no further edits needed there for this decision. Modeling is
+  complete -- no further training work is planned unless this decision is revisited.
+
 ### 2026-11-21 — FEMA bulk policies download blocked; data bundle submitted alongside the repo
 - Decided by: Jason
 - config.yaml keys: none

@@ -46,18 +46,14 @@ Update this section whenever a RUNBOOK step is finished.
   in-sample (train/trainval) rows added to `metrics_overall.csv` by scoring the
   frozen models (no refit). `pytest -q` passes, 94 tests. `README.md` (RUNBOOK 7.2)
   is drafted — needs your edit pass on the framing, not the numbers.
-- **Still open, blocking a final call: RUNBOOK 5.2** (human sign-off on M1/M2).
-  Logged in `docs/decisions.md`: M1 has the best per-claim MAE of any model but
-  underpredicts the test portfolio total by 57.6%, because latitude/longitude let it
-  memorize pre-2020 location averages that don't extrapolate to Ian/Helene/Milton
-  severity — a named, textbook limitation of tree ensembles (`docs/course-
-  checklist.md`, Lecture 5: "a tree can never predict a value outside the range in
-  the training data"), not a bug. A follow-up risk-ranking check found M1 still
-  *ranks* dollar risk better than B1 (Gini +0.35 vs +0.27, correctly sorted by
-  predicted dollars) and that the underprediction is broad/systemic across every
-  segment, not one niche (`outputs/tables/ranking_check_summary.csv`,
-  `segment_breakdown.csv`). Current plan (not yet finalized): present M1 as-is with
-  this documented, per the README. Revisit only if there's time to spare.
+- **RUNBOOK 5.2 is DONE** (human sign-off on M1/M2, decided 2026-11-21): present M1 as
+  final, as trained, with its known limitation documented rather than fixed before
+  submission — see `docs/decisions.md` for the full reasoning (it has the best
+  per-claim MAE of any model but underpredicts the test portfolio total by 57.6%, a
+  named, textbook limitation of tree ensembles, not a bug; confirmed via SHAP,
+  `outputs/tables/ranking_check_summary.csv`, and `segment_breakdown.csv`). **No
+  further training work is planned.** The "deployment fit" models remain a labeled
+  secondary comparison only, not adopted for the headline numbers (next bullet).
 - Pending team approval, not adopted: the "deployment fit" option (`config.yaml:
   deployment_fit.enabled`) — a second copy of M1/M2 refit on all claims 2010–2024,
   used only in 10/11, never touching 07's reported test metrics.
