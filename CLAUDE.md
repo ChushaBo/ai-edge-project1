@@ -39,42 +39,45 @@ mapping is in `config.yaml` under `fields`.
 
 Update this section whenever a RUNBOOK step is finished.
 
-- Done: RUNBOOK 0.1–6.3. Scripts 01–11 are all implemented and tested (`pytest -q`
-  passes, 86 tests). **Not yet merged to `main`** — sitting on two branches,
-  `jason/5.1-train-models` (07, RUNBOOK 5.1) and `jason/overnight` (08–11, RUNBOOK
-  5.3–6.3), both pushed, neither has an open PR yet. All decisions are in
-  `config.yaml` and logged in `docs/decisions.md`.
-- **Next, blocking: RUNBOOK 5.2** (human sign-off on M1/M2). Open item logged in
-  `docs/decisions.md`: M1 has the best per-claim MAE of any model but underpredicts
-  the test portfolio total by 57.6%, because latitude/longitude let it memorize
-  pre-2020 location averages that don't extrapolate to Ian/Helene/Milton severity —
-  a named, textbook limitation of tree ensembles (`docs/course-checklist.md`,
-  Lecture 5: "a tree can never predict a value outside the range in the training
-  data"). Decide: present M1 as-is with the limitation documented, fix the feature
-  set (e.g. coarsen lat/long to county — a holdout diagnostic in
-  `notebooks/diag_leave_one_storm_out.py` shows this recovers only ~4 points) and
-  rerun 07–11, or adopt the "deployment fit" comparison models (pending approval,
-  see below). Whatever is decided, phases 6–7 downstream need rerunning if M1/M2
-  themselves change.
-- Also pending team approval: the "deployment fit" option (`config.yaml:
-  deployment_fit.enabled`) — a second copy of M1/M2 refit on all claims 2010–2024
-  instead of just train+validation, used only in 10_shortfall.py/11_ian_replay.py,
-  never touching 07's reported test metrics. Logged in `docs/decisions.md`.
-- `docs/course-checklist.md` has a full review of the pipeline against the 15.071
-  lecture decks' recommendations (splits, baselines, metrics, CV, regularization,
-  interpretability, business framing), prioritized. Two cheap, high-value fixes
-  flagged there and not yet done: an in-sample (train) row in
-  `outputs/tables/metrics_overall.csv` alongside the existing test rows, and
-  `lambda_l1`/`lambda_l2` in 07's LightGBM search grid (config.yaml `models.
-  search_grid`) — neither is in yet.
-- Due Nov 25, 2026. Phase 7 (reproducibility pass, README, slides, video) has not
-  started.
-- Fresh clone: `data/` is not in git. Run `src/01`–`11` to rebuild it (02 downloads a
-  3.7 GB bulk file once), or `bash run_all.sh`. **As of 2026-11-21, step 02's bulk
-  download is blocked by a 403 from FEMA's own CDN (confirmed external, not a code
-  bug) — see `docs/reproducibility.md`.** The already-built `data/` folder is
-  submitted alongside the repo as `ai-edge-project1-data.zip` so this doesn't block
-  grading; unzip it into the repo root before running anything.
+- Done, merged to `main`: RUNBOOK 0.1–6.3 (scripts 01–11), plus three extras beyond
+  the RUNBOOK: `08b_ranking_check.py` (Spearman + Gini risk-ranking check on frozen
+  M1/B1 — see "key finding" below), `08c_segment_breakdown.py` (M1/B1/M1_deploy
+  actual-vs-predicted by coverage band, occupancy type, flood zone, year), and
+  in-sample (train/trainval) rows added to `metrics_overall.csv` by scoring the
+  frozen models (no refit). `pytest -q` passes, 94 tests. `README.md` (RUNBOOK 7.2)
+  is drafted — needs your edit pass on the framing, not the numbers.
+- **Still open, blocking a final call: RUNBOOK 5.2** (human sign-off on M1/M2).
+  Logged in `docs/decisions.md`: M1 has the best per-claim MAE of any model but
+  underpredicts the test portfolio total by 57.6%, because latitude/longitude let it
+  memorize pre-2020 location averages that don't extrapolate to Ian/Helene/Milton
+  severity — a named, textbook limitation of tree ensembles (`docs/course-
+  checklist.md`, Lecture 5: "a tree can never predict a value outside the range in
+  the training data"), not a bug. A follow-up risk-ranking check found M1 still
+  *ranks* dollar risk better than B1 (Gini +0.35 vs +0.27, correctly sorted by
+  predicted dollars) and that the underprediction is broad/systemic across every
+  segment, not one niche (`outputs/tables/ranking_check_summary.csv`,
+  `segment_breakdown.csv`). Current plan (not yet finalized): present M1 as-is with
+  this documented, per the README. Revisit only if there's time to spare.
+- Pending team approval, not adopted: the "deployment fit" option (`config.yaml:
+  deployment_fit.enabled`) — a second copy of M1/M2 refit on all claims 2010–2024,
+  used only in 10/11, never touching 07's reported test metrics.
+- Two gaps from `docs/course-checklist.md`'s review are **deferred as documented
+  limitations, not fixed** (decision logged in `docs/decisions.md`, given the
+  deadline): `lambda_l1`/`lambda_l2` were never added to 07's LightGBM search grid;
+  hyperparameters were tuned on a single validation split, not k-fold CV.
+- Due **Nov 25, 2026** (moved from Nov 20). Remaining Phase 7 work: slides, video,
+  final number-check against `outputs/tables/`, submission. The reproducibility pass
+  itself is blocked — see next bullet — not something left undone by mistake.
+- Fresh clone: `data/` is not in git. **As of 2026-11-21, `02_download_policies.py`'s
+  bulk file is blocked by a 403 from FEMA's own CDN** — confirmed external (not a
+  code bug) on two independent attempts; see `docs/reproducibility.md`. The built
+  `data/` folder (~553MB) is submitted alongside the repo as a GitHub Release
+  (tag `data-v1`) so grading doesn't depend on FEMA's endpoint recovering — unzip it
+  into the repo root, then `pytest -q` and `bash run_all.sh` both work with no FEMA
+  dependency. **`.gitignore`'s `*.zip` rule had a bug (inline comment on the pattern
+  line, which git doesn't support) that left the zip untracked-but-not-actually-
+  ignored — fixed and verified with `git check-ignore`; re-verify before any future
+  `git add .` if `.gitignore` changes again.**
 
 ## Repository layout
 
