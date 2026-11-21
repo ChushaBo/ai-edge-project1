@@ -176,6 +176,44 @@ def predict_clipped(model, df, feature_cols, categories, cap):
     return np.clip(model.predict(X), 0.0, cap)
 
 
+def in_sample_overall_rows(train_df, trainval_df, zone_col, cov_col, cap, b0, b1_means, b1_overall,
+                           m1_model, cats_m1, m1_month_model, cats_m1_month, m1_month_features,
+                           m2_model, cats_m2, m2_features, m2_masked_model, cats_m2m,
+                           m2_masked_features) -> list[dict]:
+    """In-sample counterparts to metrics_overall.csv's test_full / test_matched rows, so
+    over/underfitting is visible the way the course material consistently shows it
+    (in-sample vs. out-of-sample metrics side by side, every model -- see
+    docs/course-checklist.md, Lectures 4/5/6/8). Only ever calls .predict(): takes
+    already-fit models/baselines, fits nothing. Mirrors the test_full/test_matched
+    scoping exactly: "train"/"trainval" are the unrestricted frames (B0, B1, M1, same
+    models as test_full); "train_matched"/"trainval_matched" restrict to claims with a
+    narrative (all 6 models, same models as test_matched) for a fair M1-vs-M2 in-sample
+    comparison on the same rows."""
+    rows = []
+
+    def add(eval_name, frame, model_name, pred):
+        m = dollar_metrics(frame[TARGET].to_numpy(), pred, frame[cov_col].to_numpy())
+        m.update({"eval_set": eval_name, "model": model_name})
+        rows.append(m)
+
+    for name, frame in (("train", train_df), ("trainval", trainval_df)):
+        add(name, frame, "B0", np.full(len(frame), b0))
+        add(name, frame, "B1", predict_b1(frame, zone_col, b1_means, b1_overall))
+        add(name, frame, "M1", predict_clipped(m1_model, frame, M1_FEATURES, cats_m1, cap))
+
+    for name, frame in (("train_matched", train_df), ("trainval_matched", trainval_df)):
+        matched = frame[frame["has_narrative"]]
+        add(name, matched, "B0", np.full(len(matched), b0))
+        add(name, matched, "B1", predict_b1(matched, zone_col, b1_means, b1_overall))
+        add(name, matched, "M1", predict_clipped(m1_model, matched, M1_FEATURES, cats_m1, cap))
+        add(name, matched, "M1_month", predict_clipped(m1_month_model, matched, m1_month_features,
+                                                       cats_m1_month, cap))
+        add(name, matched, "M2", predict_clipped(m2_model, matched, m2_features, cats_m2, cap))
+        add(name, matched, "M2_masked", predict_clipped(m2_masked_model, matched, m2_masked_features,
+                                                        cats_m2m, cap))
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -318,6 +356,10 @@ def main() -> None:
             m = dollar_metrics(frame[TARGET].to_numpy(), pred, frame[cov_col].to_numpy())
             m.update({"eval_set": eval_name, "model": model_name})
             overall_rows.append(m)
+    overall_rows += in_sample_overall_rows(
+        train_df, trainval_df, zone_col, cov_col, cap, b0, b1_means, b1_overall,
+        m1_model, cats_m1, m1_month_model, cats_m1_month, m1_month_features,
+        m2_model, cats_m2, m2_features, m2_masked_model, cats_m2m, m2_masked_features)
     overall = pd.DataFrame(overall_rows)[
         ["eval_set", "model", "n", "mae_share", "rmse_share", "mae_dollar", "rmse_dollar",
          "actual_total_dollar", "predicted_total_dollar", "pct_error_total"]
