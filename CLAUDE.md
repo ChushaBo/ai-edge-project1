@@ -54,9 +54,11 @@ Update this section whenever a RUNBOOK step is finished.
   `outputs/tables/ranking_check_summary.csv`, and `segment_breakdown.csv`). **No
   further training work is planned.** The "deployment fit" models remain a labeled
   secondary comparison only, not adopted for the headline numbers (next bullet).
-- Pending team approval, not adopted: the "deployment fit" option (`config.yaml:
+- Finished, not adopted: the "deployment fit" option (`config.yaml:
   deployment_fit.enabled`) — a second copy of M1/M2 refit on all claims 2010–2024,
-  used only in 10/11, never touching 07's reported test metrics.
+  used only in 10/11, never touching 07's reported test metrics. Reported as a
+  side-by-side comparison only; whether to ever use it for real pricing is a
+  separate, forward-looking question for a future adopter, not an open task here.
 - Two gaps from `docs/course-checklist.md`'s review are **deferred as documented
   limitations, not fixed** (decision logged in `docs/decisions.md`, given the
   deadline): `lambda_l1`/`lambda_l2` were never added to 07's LightGBM search grid;

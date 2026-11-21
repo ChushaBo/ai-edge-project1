@@ -111,8 +111,10 @@ other step then proceeds with no FEMA dependency. Full detail: `docs/reproducibi
   proposed feature-set fix recovers only ~4 of the 57 points, too small a payoff for
   the cost of re-verifying everything downstream before the deadline.
 - A **"deployment fit"** of M1/M2 (refit on all claims 2010-2024, not just
-  train+validation) is implemented as a comparison only and is pending team approval
-  before being adopted for real pricing — it has no genuine held-out test of its own.
+  train+validation) is reported only as a side-by-side comparison, not a headline
+  result — it has no genuine held-out test of its own. Whether a model like this
+  should ever be used for real pricing is a separate, forward-looking question for
+  whoever might adopt it; it isn't a decision this project needs to make.
 - Two gaps identified against the 15.071 course material (`docs/course-checklist.md`)
   are deferred, not fixed, given the deadline: LightGBM's `lambda_l1`/`lambda_l2`
   regularization was never tuned; hyperparameters were tuned on a single validation
