@@ -22,6 +22,34 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-21 — FEMA bulk policies download blocked; data bundle submitted alongside the repo
+- Decided by: Jason
+- config.yaml keys: none
+- Decision: Document the RUNBOOK 7.1 reproducibility-pass failure plainly
+  (docs/reproducibility.md) rather than attempt to work around FEMA's access
+  control, and submit the already-built data/ folder (~553MB, zipped) alongside the
+  GitHub repo link so grading does not depend on FEMA's endpoint being back up.
+- Options considered: (a) retry repeatedly hoping the block clears before Nov 25;
+  (b) spoof browser headers to get past the WAF (attempted once, correctly blocked
+  by the harness's own permission system as access evasion, not retried); (c) find
+  an alternate/mirrored source for the bulk file (none known); (d) document + submit
+  data/ directly (chosen).
+- Rationale: confirmed via two independent attempts (minutes apart, from a genuinely
+  fresh clone with no local data) and via curl against the bulk file URL directly,
+  that FEMA's Akamai CDN returns 403 Forbidden on `NfipPoliciesV3.parquet` regardless
+  of request headers. FEMA's own data page
+  (fema.gov/openfema-data-page/nfip-redacted-policies-v3) confirms this is still the
+  correct, current URL -- not a stale link we need to update. Step 01
+  (`01_download_claims.py`, a different OpenFEMA endpoint) downloads cleanly from a
+  truly fresh clone, so this is isolated to one external file, not a broader outage
+  or a bug in our download code. data/ is gitignored by design (CLAUDE.md rule 1), so
+  a fresh git clone has no fallback once this one external file is unreachable.
+- Follow-ups / checks: If FEMA's block clears before grading, retry a true
+  from-scratch `bash run_all.sh` as the authoritative reproducibility check; until
+  then, treat the bundled data/ as the starting point. Nothing already computed in
+  outputs/ or data/models/ is affected by this -- it was all built before the block
+  appeared.
+
 ### 2026-11-21 — Deferred fixes from the course-material review, as documented limitations
 - Decided by: Jason, given the Nov 25 deadline -- not fixing, logging instead
 - config.yaml keys: none

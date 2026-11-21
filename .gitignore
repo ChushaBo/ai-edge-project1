@@ -11,6 +11,7 @@ docs/course/
 *.pdf
 !docs/data_dictionaries/*.pdf
 ~$*
+*.zip   # e.g. ai-edge-project1-data.zip, the data/ bundle submitted alongside the repo
 
 # Python
 __pycache__/

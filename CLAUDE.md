@@ -70,7 +70,11 @@ Update this section whenever a RUNBOOK step is finished.
 - Due Nov 25, 2026. Phase 7 (reproducibility pass, README, slides, video) has not
   started.
 - Fresh clone: `data/` is not in git. Run `src/01`–`11` to rebuild it (02 downloads a
-  3.7 GB bulk file once), or `bash run_all.sh`.
+  3.7 GB bulk file once), or `bash run_all.sh`. **As of 2026-11-21, step 02's bulk
+  download is blocked by a 403 from FEMA's own CDN (confirmed external, not a code
+  bug) — see `docs/reproducibility.md`.** The already-built `data/` folder is
+  submitted alongside the repo as `ai-edge-project1-data.zip` so this doesn't block
+  grading; unzip it into the repo root before running anything.
 
 ## Repository layout
 
