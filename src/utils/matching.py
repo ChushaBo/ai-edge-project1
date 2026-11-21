@@ -156,9 +156,18 @@ def flag_quarantine(df: pd.DataFrame, rules: list[dict], date_col: str) -> pd.Da
     return df.assign(quarantined=reason.notna(), quarantine_reason=reason)
 
 
-def exclude_quarantined(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """Drop quarantined claims when config quarantine.enabled is true (for steps 06+)."""
-    if cfg.get("quarantine", {}).get("enabled") and "quarantined" in df:
+def exclude_quarantined(df: pd.DataFrame, cfg: dict, model: str | None = None) -> pd.DataFrame:
+    """Drop quarantined claims for `model` (for steps 06+).
+
+    Quarantine is model-scoped (config quarantine.applies_to, decided 2026-11-15): rows
+    are dropped only when quarantine.enabled is true AND model is in applies_to. Pass
+    model=None to apply the drop unconditionally on enabled (ignores applies_to) -- used
+    where the caller is not one specific model, e.g. a shared text-feature table that
+    only text models ever read.
+    """
+    q = cfg.get("quarantine", {})
+    scoped = model is None or model in q.get("applies_to", [])
+    if q.get("enabled") and scoped and "quarantined" in df:
         return df[~df["quarantined"]]
     return df
 

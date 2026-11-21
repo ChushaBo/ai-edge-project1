@@ -22,6 +22,117 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-15 — OPEN ITEM for RUNBOOK 5.2: M1 badly underpredicts the test portfolio total
+- Decided by: not yet decided -- open item for human review (RUNBOOK 5.2)
+- config.yaml keys: none changed; this is a finding from src/07_train_models.py's first
+  run, not a decision
+- Finding: M1 has the best claim-level MAE of every model ($78,067 on test_full vs
+  B1's $109,767) but underpredicts the test_full portfolio total by far more than the
+  trivial baselines: M1 -57.6% ($5.05B predicted vs $11.92B actual), B1 -3.8%, B0 -7.9%.
+  On test_matched the gap is smaller but M1 is still worse than B1 in portfolio terms
+  (M1 -54.6% vs B1 +9.7%), even though M1's MAE is still best. M2 and M2_masked do NOT
+  beat M1 on test_matched (MAE $74,783 and $73,227 vs M1's $73,457, all on the same
+  64,620 matched claims) -- text has not shown a benefit yet, and M1_month (M1 + month
+  of loss, no text) is in the same range ($73,946), so neither text nor seasonality
+  explains much here.
+- Likely cause: a severity shift between train and test that no pre-event tabular
+  feature can see coming. Test's mean share-of-coverage is 0.37 vs train's 0.19 (median
+  0.34 vs 0.10) -- Ian, Helene and Milton caused far more severe losses than anything
+  in 2010-2019. B1's coarse flood-zone split happens to transfer because the
+  worst-hit zones (V, A) already carried the highest historical averages. M1 does
+  worse specifically because latitude/longitude are its two most-used features (1,459
+  and 1,386 LightGBM splits, more than any other feature): they let the tree carve
+  very fine spatial leaves that each memorize one location's 2010-2019 average loss
+  ratio, with no mechanism to adjust when that same location is hit far harder in a
+  later, unprecedented storm. Coverage-weighted mean predicted share on test: M1 0.087,
+  B1 0.197, actual 0.204 -- M1 is the only one that collapses. Validation (2020-2021,
+  already flagged as "relatively quiet years") never caught this because the
+  hyperparameter search optimized validation MAE on a period with no catastrophic
+  storms, so nothing in tuning penalized the failure mode.
+- Diagnostic run to test the lat/long hypothesis WITHOUT touching test (training period
+  only, RUNBOOK rule 5; notebooks/diag_leave_one_storm_out.py): held out Hurricane Irma
+  (2017, 18,023 claims) and Michael (2018, 2,971 claims) from train, refit M1,
+  M1_county (M1_FEATURES with latitude/longitude replaced by countyCode) and B1 on the
+  remaining 17,684 training rows, scored on each held-out storm.
+  | storm | model | MAE $ | portfolio % error |
+  |---|---|---|---|
+  | Irma 2017 | M1 | 37,771 | -28.6% |
+  | Irma 2017 | M1_county | 37,276 | -24.8% |
+  | Irma 2017 | B1 | 97,056 | +120.5% |
+  | Michael 2018 | M1 | 49,247 | -46.6% |
+  | Michael 2018 | M1_county | 50,363 | -42.7% |
+  | Michael 2018 | B1 | 57,129 | -28.3% |
+  Coarsening location to county gives a modest, consistent improvement in portfolio
+  total (about 4 points on both storms) at essentially the same claim-level MAE -- it
+  does not fully fix the underprediction, so lat/long granularity is A cause, not the
+  only one. B1 is not a safe fallback either: it swings from +120% on Irma to -28% on
+  Michael, i.e. a flood-zone mean is unstable storm to storm once the training mix
+  changes, not a reliably conservative benchmark.
+- Options to weigh in 5.2 (not decided; M1 has NOT been changed): (a) replace
+  latitude/longitude with countyCode or a coarser grid in allowed_features -- a
+  feature-set decision, needs sign-off, partial fix per the diagnostic above;
+  (b) a monotonic or depth constraint on lat/long instead of removing them;
+  (c) widen the validation window or add a catastrophe-weighted validation metric so
+  tuning is not blind to this failure mode; (d) accept that M1 is unsuitable for the
+  portfolio-level shortfall (step 6.2) as built and flag it prominently in the
+  write-up; (e) revisit whether step 6.2 should use a severity multiplier or
+  catastrophe loading on top of M1 rather than M1's raw prediction.
+- Follow-ups / checks: Do not retune hyperparameters against test_full/test_matched to
+  chase this number down (RUNBOOK rule: test is used once). Any fix is a feature or
+  validation-design change, tested the same way (held-out training-period storms)
+  before it is allowed anywhere near test. Revisit this before RUNBOOK 6.2 (shortfall)
+  and 6.3 (Ian replay), both of which depend on M1's predicted severity.
+
+### 2026-11-15 — M1/M2 objective fixed to L2 (RUNBOOK 5.1)
+- Decided by: Jason
+- config.yaml keys: models.objective, models.search_grid, models.l1_diagnostic_objective
+- Decision: Train all LightGBM models (M1, M2, M2_masked, and the M1+month diagnostic)
+  with objective = regression (L2/squared error) only. regression_l1 is not part of the
+  validation search; it is logged once per model as a diagnostic validation MAE in
+  outputs/tables/metrics_validation.csv, never selected or carried to test.
+- Options considered: Include objective in the tuning grid and let validation MAE pick
+  between L2 and L1 per model (the original plan); L1 only, since MAE is the headline
+  metric.
+- Rationale: M1's predicted severity feeds the county-level shortfall total in step 6.2
+  (predicted loss x frequency, summed by county) and the Ian replay in 6.3. share_of_coverage
+  is right-skewed (mean 0.32, median 0.25, 8,069 claims capped at 1.0), so an L1 objective
+  targets the conditional median and would systematically under-predict the portfolio sum
+  that the shortfall depends on, even if it scores slightly better on per-claim MAE. A
+  pricing-feeding model needs to get the total right; L2 targets the conditional mean, which
+  is what sums correctly in expectation.
+- Follow-ups / checks: If a later step needs calibrated quantiles (e.g. a reserve estimate)
+  reconsider a quantile or Tweedie objective then. The L1 diagnostic in
+  metrics_validation.csv is there to see how much per-claim MAE it would have cost us to
+  avoid the mean-bias.
+
+### 2026-11-15 — Helene quarantine applies to the text models only (supersedes the entry below)
+- Decided by: Jason
+- config.yaml keys: quarantine.applies_to (new), quarantine.enabled (unchanged, true)
+- Decision: The 46,971 quarantined Helene claims are excluded from M2 and M2_masked only.
+  B0, B1 and M1 are trained and scored on the full data, so the headline test set stays at
+  112,573 claims (all of 2022–2024, Helene included). M1 vs M2 is compared on the matched
+  subset of test claims (64,620 claims with a narrative), reported as a second evaluation
+  set in outputs/tables/metrics_overall.csv. Quarantine affects no training rows: all
+  46,971 are test-period losses (train 38,678 and validation 7,657 have none).
+- Options considered: Keep quarantine for every model (previous decision; loses 42% of the
+  test set and most of Helene's loss from the headline numbers); drop the quarantine
+  entirely and score M2 with zero text features on Helene claims (makes M2 look worse for
+  a data-availability reason, not a modelling one); attach Helene narratives from other
+  Florida counties.
+- Rationale: The gap is in NOAA's input data, not in our matching, and it only touches the
+  text features. The shortfall and pricing work (steps 6.1–6.2) uses M1, so M1 must see and
+  be scored on the whole test period, including the largest flood event in it. Scoring M2
+  on claims with no narrative would measure missing data rather than the value of text.
+  Two evaluation sets keep both comparisons honest: B1 vs M1 on everything, M1 vs M2 on the
+  same matched claims.
+- Follow-ups / checks: Checked the open item from the superseded entry: NOAA has no newer
+  2024 details file. The directory listing on 2026-11-15 still shows only
+  StormEvents_details-ftp_v1.0_d2024_c20260728.csv.gz (last modified 2026-07-28), the file
+  we already have. The 2024 file does contain 149 Florida events whose narratives name
+  Helene, but none for the five Tampa Bay counties — those counties have no NOAA events at
+  all in September 2024, so this is an upstream reporting gap. Re-check if NOAA reissues the
+  2024 file. Every table and figure must say which evaluation set it uses.
+
 ### 2026-11-15 — Text embedding implementation (RUNBOOK 4.1)
 - Decided by: Bohdan Chushak
 - config.yaml keys: embedding.chunk_words, embedding.batch_size (implementation settings)
