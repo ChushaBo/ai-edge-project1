@@ -22,6 +22,81 @@ Copy this block for each decision.
 
 <!-- Add entries below, newest first. -->
 
+### 2026-11-21 — Deferred fixes from the course-material review, as documented limitations
+- Decided by: Jason, given the Nov 25 deadline -- not fixing, logging instead
+- config.yaml keys: none
+- Decision: two items flagged in docs/course-checklist.md's review are deferred and
+  should be stated as limitations in the writeup, not silently omitted:
+  1. **No `lambda_l1`/`lambda_l2` in 07_train_models.py's LightGBM search grid**
+     (`config.yaml: models.search_grid`). Lectures 4 and 9 teach L1/L2 leaf-weight
+     regularization as a named, primary overfitting control (ridge/LASSO for linear
+     models; the same penalty for neural-net weights). We rely only on early
+     stopping, `num_leaves`, `min_child_samples`, `feature_fraction`, and
+     `bagging_fraction` -- never the direct regularization-strength knob. Adding it
+     means re-running 07 (new `m1_lgbm.joblib`, etc.) and re-verifying everything
+     downstream (08, 08b, 09-11), which is not worth the remaining time before
+     Nov 25.
+  2. **Hyperparameters tuned on a single validation split, not k-fold CV.**
+     Lectures 4-6 show a single validation split gives unstable (high-variance)
+     hyperparameter choices, and recommend k-fold CV instead. We tuned M1/M2's grid
+     on one time-block validation split (2020-2021) only. Lecture 6 also notes CV
+     folds must respect grouping/temporal structure to avoid leakage, so a fix here
+     would mean blocked/rolling-origin time-series CV, not plain random k-fold --
+     a bigger lift than (1), also deferred.
+- Rationale: both are real, specific, course-grounded gaps, not oversights we were
+  unaware of -- see docs/course-checklist.md's review for the full citations. Given
+  the Nov 25 deadline, the chosen tradeoff is to ship with the models exactly as
+  validated (M1/M2's reported test metrics stay trustworthy and unchanged) and state
+  these two as named limitations, rather than retrain under time pressure and risk
+  not fully re-verifying the new numbers before submission.
+- Follow-ups / checks: Both are reasonable candidates for a post-submission pass if
+  the project continues. Neither affects any number already reported; they are
+  about how confident to be in the *chosen hyperparameters* being the best
+  available, not about whether the currently-reported metrics are correct.
+
+### 2026-11-16 — PENDING TEAM APPROVAL: "deployment fit" option for M1/M2 (phase 6)
+- Decided by: not yet decided -- pending team approval; added as a capability only
+- config.yaml keys: deployment_fit.enabled (implementation setting, not a DECISION)
+- What it is: when true, 10_shortfall.py and 11_ian_replay.py each fit a SECOND copy
+  of M1 / M2 -- same tuned hyperparameters as the official models in
+  data/models/m1_lgbm.joblib / m2_lgbm.joblib, refit on ALL claims 2010-2024
+  (train+validation+test; M2 still excludes Helene-quarantined claims per its
+  established scope) -- saved separately as m1_deploy_lgbm.joblib /
+  m2_deploy_lgbm.joblib. It is for forward-looking pricing/scenario use on CURRENT
+  policies only. It never touches 07_train_models.py, never changes a reported test
+  metric, and the official train/validation/test split used for every number in
+  metrics_overall.csv is untouched.
+- Why it exists: the holdout diagnostic (notebooks/diag_leave_one_storm_out.py,
+  logged above) showed that coarsening location (county for lat/long) only recovers
+  about 4 points of M1's portfolio-total underprediction -- the bigger issue is that
+  2010-2021 training data never saw catastrophe-level severity at all. A model that
+  has already seen 2022-2024 (Ian, Helene, Milton) has no train/test gap left to fall
+  into when scoring a NEW policy today. Results from running it (2026-11-16, see
+  docs/overnight_report.md for the full numbers): m1_deploy's shortfall loss ratio
+  (0.511) lands close to the B1 baseline (0.508), versus the official M1's 0.278 --
+  consistent with the hypothesis, for a scenario where there is no backtest to
+  contaminate.
+- Options considered: (a) adopt deployment-fit models as the ones that feed the real
+  phase-6 shortfall and Ian-replay numbers; (b) keep them as a side-by-side comparison
+  only, as implemented tonight; (c) don't build this at all and wait for a feature-set
+  fix (lat/long constraint, monotonic constraint, etc.) before trusting any
+  forward-looking number.
+- Why this needs team sign-off, not a unilateral call: a model fit on ALL historical
+  data, including the most recent and most severe years, has no genuine held-out test
+  of its OWN forward-looking accuracy -- we can observe that it behaves more like B1
+  on the holdout-style checks run so far, but we cannot cross-validate "how well will
+  this particular refit do on 2025-2026," because by construction it has already seen
+  every labeled year available. Whether that's an acceptable way to price 2025
+  policies (vs. waiting for 5.2's feature-level fix) is a judgment call about risk
+  tolerance, not a technical one.
+- Follow-ups / checks: If the team adopts deployment-fit models for real pricing,
+  write that decision here with a new entry (superseding this one) and update
+  CLAUDE.md's "Current status." The m2_deploy variant used in the Ian replay
+  (src/11_ian_replay.py) is additionally CIRCULAR for that specific scenario (Ian's
+  own 2022 claims are inside its training data), flagged there and in
+  outputs/tables/ian_replay_assumptions.md -- do not read m2_deploy's Ian-replay
+  number as validated accuracy, even if deployment fit is otherwise adopted.
+
 ### 2026-11-15 — OPEN ITEM for RUNBOOK 5.2: M1 badly underpredicts the test portfolio total
 - Decided by: not yet decided -- open item for human review (RUNBOOK 5.2)
 - config.yaml keys: none changed; this is a finding from src/07_train_models.py's first

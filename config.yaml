@@ -108,6 +108,8 @@ sources:
   # NWS zone-to-county correlation files (bpDDmmYY.dbx), discovered from this page.
   nws_zone_county_page: https://www.weather.gov/gis/ZoneCounty
   nws_zone_county_base: https://www.weather.gov/source/gis/Shapefiles/County/
+  # Census cartographic boundary file (counties, 1:500k), for the shortfall choropleth.
+  census_county_url: https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_county_500k.zip
 
 years:
   claims_start: 2010     # DECISION: first year of loss to include (int); storms use the same range
@@ -267,5 +269,23 @@ models:
     learning_rate: [0.03, 0.08]
     min_child_samples: [20, 100]
   l1_diagnostic_objective: regression_l1  # validation MAE only, in metrics_validation.csv
+
+# 09_frequency implementation settings (not decisions; RUNBOOK 6.1). Only one policy
+# snapshot (years.policies_year) is available, so it stands in for every year's
+# exposure in the window years.claims_start..claims_end -- documented as a limitation
+# in the script docstring, not a decision needing sign-off.
+frequency:
+  credibility_k_county: 100   # Buhlmann credibility constant, in claim counts: county
+  credibility_k_cell: 30      # rate shrinks toward statewide; county+zone cell shrinks
+                              # toward its county rate. Smaller k = less shrinkage.
+
+# 10_shortfall / 11_ian_replay implementation setting (not a decision; pending team
+# approval, docs/decisions.md "deployment fit"). When enabled, those two scripts also
+# fit a second copy of M1 / M2 on ALL claims 2010-2024 (train+validation+test) using
+# the already-tuned hyperparameters from 07_train_models.py, for forward-looking
+# pricing/scenario use only. It never touches 07_train_models.py or its reported test
+# metrics. Saved separately as data/models/m1_deploy_lgbm.joblib / m2_deploy_lgbm.joblib.
+deployment_fit:
+  enabled: true   # implementation setting; ADOPTING these models is pending team approval
 
 random_seed: 42          # DECISION: seed for numpy, sklearn, lightgbm, torch (int)

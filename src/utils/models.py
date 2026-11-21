@@ -39,6 +39,12 @@ def text_feature_columns(n_components: int, prefix: str) -> list[str]:
     return [f"{prefix}_pc{i + 1:02d}" for i in range(n_components)]
 
 
+def county_from_geoid(geoid: pd.Series) -> pd.Series:
+    """Policies have no county field (fields.policies_county = censusGeoid); county
+    FIPS is the first 5 digits (RUNBOOK 1.4 field review)."""
+    return geoid.astype("string").str.slice(0, 5)
+
+
 def fit_categories(df: pd.DataFrame, feature_cols: list[str]) -> dict[str, list[str]]:
     """Category levels for each categorical feature, read from the FITTING rows only."""
     cats: dict[str, list[str]] = {}

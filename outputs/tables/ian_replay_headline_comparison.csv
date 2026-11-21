@@ -1,0 +1,6 @@
+source,total_dollar,note
+historical_actual_fl_narrative_matched,4360963517.75,"36,646 claims whose narrative matched Ian"
+historical_actual_fl_date_window,4321708492.559999,"35,967 FL claims, loss date 2022-09-23..2022-10-07"
+fema_reported_nationwide,4900000000.0,"48,776 claims (see ian_replay_assumptions.md for citation)"
+replay_m2_current,1323432712.2607605,"scenario: today's policies, M2 (current, train+validation)"
+replay_m2_deploy_CIRCULAR,3358342879.028503,"scenario: today's policies, M2 deploy-fit on ALL claims INCLUDING Ian -- circular"

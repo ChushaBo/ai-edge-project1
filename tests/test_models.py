@@ -43,6 +43,12 @@ def test_encode_features_keeps_nullable_na_and_coerces_numerics():
     np.testing.assert_array_equal(out["elevatedBuildingIndicator"].to_numpy(), [1.0, 0.0, np.nan])
 
 
+def test_county_from_geoid_takes_first_five_digits():
+    out = models.county_from_geoid(pd.Series(["120860059013", "120350601063", None]))
+    assert out.tolist()[:2] == ["12086", "12035"]
+    assert pd.isna(out.iloc[2])
+
+
 def test_m1_features_exclude_month_and_text():
     assert "month_of_loss" not in models.M1_FEATURES
     assert not any(c.startswith(("txt_pc", "txtm_pc")) for c in models.M1_FEATURES)
@@ -103,6 +109,69 @@ def test_objective_is_l2_only_not_part_of_search_grid():
 
 
 # --- event grouping: matched claims group by episode, unmatched by date cluster ----
+
+def test_in_sample_overall_rows_covers_expected_eval_sets_and_models():
+    """Integration smoke test against the real frozen artifacts (skips if the models
+    haven't been fit yet). Guards 07_train_models.in_sample_overall_rows, which only
+    ever calls .predict() -- it must never be changed to fit anything."""
+    import joblib
+
+    from utils.config import get_path, load_config, load_pipeline_script, require
+    from utils.matching import exclude_quarantined
+
+    M1_FEATURES, MONTH_FEATURE = models.M1_FEATURES, models.MONTH_FEATURE
+    text_feature_columns = models.text_feature_columns
+
+    cfg = load_config()
+    models_dir = get_path(cfg, "models", create=False)
+    required = ["baselines.joblib", "m1_lgbm.joblib", "m1_month_lgbm.joblib",
+               "m2_lgbm.joblib", "m2_masked_lgbm.joblib"]
+    if not all((models_dir / f).exists() for f in required):
+        pytest.skip("model bundles not built (run src/07_train_models.py)")
+
+    m7 = load_pipeline_script("07_train_models")
+    cap = float(require(cfg, "target.cap_share_at"))
+    k = int(require(cfg, "pca.n_components"))
+    cov_col = require(cfg, "fields.claims_coverage")
+    zone_col = "flood_zone_group"
+
+    meta_cols = ["id", "split", "target", "has_narrative", "quarantined"]
+    claims_cols = sorted(set(meta_cols + M1_FEATURES + [MONTH_FEATURE]))
+    claims = pd.read_parquet(get_path(cfg, "interim", create=False) / "claims_with_text.parquet",
+                             columns=claims_cols)
+    txt_cols, txtm_cols = text_feature_columns(k, "txt"), text_feature_columns(k, "txtm")
+    text_feats = pd.read_parquet(get_path(cfg, "processed", create=False) / "text_features.parquet",
+                                 columns=["id"] + txt_cols + txtm_cols)
+    merged = claims.merge(text_feats, on="id", how="left")
+    train_df = exclude_quarantined(merged[merged["split"] == "train"], cfg, model="M1").reset_index(drop=True)
+    val_df = exclude_quarantined(merged[merged["split"] == "validation"], cfg, model="M1").reset_index(drop=True)
+    trainval_df = pd.concat([train_df, val_df], ignore_index=True)
+
+    m1_month_features = M1_FEATURES + [MONTH_FEATURE]
+    m2_features = m1_month_features + txt_cols + ["has_narrative"]
+    m2_masked_features = m1_month_features + txtm_cols + ["has_narrative"]
+    baselines = joblib.load(models_dir / "baselines.joblib")
+    bundle_m1 = joblib.load(models_dir / "m1_lgbm.joblib")
+    bundle_m1_month = joblib.load(models_dir / "m1_month_lgbm.joblib")
+    bundle_m2 = joblib.load(models_dir / "m2_lgbm.joblib")
+    bundle_m2_masked = joblib.load(models_dir / "m2_masked_lgbm.joblib")
+
+    rows = m7.in_sample_overall_rows(
+        train_df, trainval_df, zone_col, cov_col, cap,
+        baselines["b0"], baselines["b1_means"], baselines["b1_overall"],
+        bundle_m1["model"], bundle_m1["categories"],
+        bundle_m1_month["model"], bundle_m1_month["categories"], m1_month_features,
+        bundle_m2["model"], bundle_m2["categories"], m2_features,
+        bundle_m2_masked["model"], bundle_m2_masked["categories"], m2_masked_features,
+    )
+    out = pd.DataFrame(rows)
+    assert set(out["eval_set"]) == {"train", "trainval", "train_matched", "trainval_matched"}
+    assert set(out[out["eval_set"] == "train"]["model"]) == {"B0", "B1", "M1"}
+    assert set(out[out["eval_set"] == "train_matched"]["model"]) == \
+        {"B0", "B1", "M1", "M1_month", "M2", "M2_masked"}
+    assert (out["n"] > 0).all()
+    assert out["mae_dollar"].notna().all()
+
 
 def test_event_groups_splits_matched_and_unmatched():
     df = pd.DataFrame({
