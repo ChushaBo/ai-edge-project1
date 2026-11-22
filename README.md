@@ -94,7 +94,7 @@ type, flood zone, and year), not isolated to one property type.
 
 ```
 pytest -q            # 94 passed
-bash run_all.sh       # 01 through 11, from raw downloads to the Ian replay
+bash run_all.sh       # 01 through 11 (incl. 08b/08c), from raw downloads to the Ian replay
 ```
 
 **Known issue, as of 2026-11-21**: `02_download_policies.py`'s bulk file download is
@@ -103,6 +103,11 @@ a bug here), and unrelated to any other step. If `bash run_all.sh` stops at step
 and retrying doesn't help, **download the `data/` bundle from this repo's GitHub
 Releases** (tag `data-v1`) and unzip it into the repo root before rerunning — every
 other step then proceeds with no FEMA dependency. Full detail: `docs/reproducibility.md`.
+
+Verified 2026-11-22 from two fresh clones: with the full `data-v1` bundle, every output
+in `outputs/` reproduces exactly. Rebuilding from `data/raw/` alone reproduces B0/B1/M1
+exactly, but M2 and the Ian replay can shift by ~2-3% because the text embeddings are
+recomputed (see `docs/reproducibility.md`).
 
 ## Limitations
 

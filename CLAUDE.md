@@ -64,8 +64,11 @@ Update this section whenever a RUNBOOK step is finished.
   deadline): `lambda_l1`/`lambda_l2` were never added to 07's LightGBM search grid;
   hyperparameters were tuned on a single validation split, not k-fold CV.
 - Due **Nov 25, 2026** (moved from Nov 20). Remaining Phase 7 work: slides, video,
-  final number-check against `outputs/tables/`, submission. The reproducibility pass
-  itself is blocked — see next bullet — not something left undone by mistake.
+  final number-check against `outputs/tables/`, submission. Reproducibility (RUNBOOK
+  7.1) **verified 2026-11-22 from the `data-v1` release**: the full bundle reproduces
+  every output exactly; rebuilding from `data/raw/` only reproduces B0/B1/M1 exactly
+  but shifts M2/Ian replay by ~2-3% (embedding float noise). Details in
+  `docs/reproducibility.md`. `requirements.txt` is now pinned to the verified versions.
 - Fresh clone: `data/` is not in git. **As of 2026-11-21, `02_download_policies.py`'s
   bulk file is blocked by a 403 from FEMA's own CDN** — confirmed external (not a
   code bug) on two independent attempts; see `docs/reproducibility.md`. The built
