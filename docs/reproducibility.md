@@ -62,6 +62,12 @@ Two fresh clones of `main` (`caca49c`), each in a new venv from the pinned
 `requirements.txt` (Python 3.14, Windows, CPU only), running `bash run_all.sh` plus
 `08b`/`08c`, then `pytest -q`:
 
+> **Pin update (2026-11-23):** this run used `transformers==5.24.0` and `pyyaml==6.0.4`.
+> `requirements.txt` now pins `transformers==5.23.0` and `pyyaml==6.0.3` to match the
+> environment that trained the committed models (all other pins already matched it).
+> The full-bundle route doesn't depend on either version. Whether the transformers
+> version contributes to the M2 drift below is untested.
+
 | Starting data | Result |
 |---|---|
 | **Full bundle** unzipped (the documented route) | All outputs identical to the committed ones; 94 tests pass; ~5 min. |
