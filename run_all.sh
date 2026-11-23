@@ -18,6 +18,9 @@ SCRIPTS=(
   09_frequency.py
   10_shortfall.py
   11_ian_replay.py
+  # Run last: 08c needs m1_deploy_lgbm.joblib, which 10 writes.
+  08b_ranking_check.py
+  08c_segment_breakdown.py
 )
 
 for script in "${SCRIPTS[@]}"; do

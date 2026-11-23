@@ -55,3 +55,36 @@ running anything. With this in place:
 | `data/processed/` | 17M | Text embeddings (cache + PCA features) |
 | `data/models/` | 8.3M | All trained model bundles, including the deployment-fit variants |
 | **Total** | **~553M** | |
+
+## Verification run (2026-11-22)
+
+Two fresh clones of `main` (`caca49c`), each in a new venv from the pinned
+`requirements.txt` (Python 3.14, Windows, CPU only), running `bash run_all.sh` plus
+`08b`/`08c`, then `pytest -q`:
+
+| Starting data | Result |
+|---|---|
+| **Full bundle** unzipped (the documented route) | All outputs identical to the committed ones; 94 tests pass; ~5 min. |
+| **`data/raw/` only** (everything from cleaning onward rebuilt, embeddings recomputed) | B0, B1, M1, SHAP, frequency, shortfall, ranking check and segment breakdown identical. **M2/M2_masked and the Ian replay differ slightly** (below); 94 tests pass; ~12 min. |
+
+Why M2 moves when embeddings are recomputed: re-encoding the narratives on a different
+machine produces vectors that differ by at most ~1e-5 (ordinary floating-point
+differences in the sentence-transformer). Several M2 hyperparameter settings are nearly
+tied on validation MAE, so that noise is enough to change which one 07 selects. Effect
+on the reported numbers:
+
+| Output | Committed | Rebuilt from raw |
+|---|---:|---:|
+| M2 test_matched MAE | $74,783 | $75,139 |
+| M2 test_matched portfolio total, % error | −56.8% | −54.0% |
+| Ian replay, M2 (current fit) | $1.32B | $1.35B |
+| Ian replay, M2 deploy-fit (circular) | $3.36B | $3.45B |
+
+None of the conclusions change (M1 still has the lowest per-claim MAE, and M2 still
+misses Ian by roughly 70%). To reproduce the committed M2 numbers exactly, keep the
+bundled `data/processed/embedding_cache.parquet`: step 06 then reuses the cached
+vectors instead of re-encoding.
+
+The only other difference is cosmetic: `outputs/tables/policies_columns.csv` lists
+date columns as `datetime64[ms, UTC]` instead of `datetime64[s, UTC]` under newer
+pandas/pyarrow. The data are the same.
