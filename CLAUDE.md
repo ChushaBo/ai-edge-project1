@@ -41,11 +41,14 @@ Update this section whenever a RUNBOOK step is finished.
 
 - Done, merged to `main`: RUNBOOK 0.1–6.3 (scripts 01–11), plus three extras beyond
   the RUNBOOK: `08b_ranking_check.py` (Spearman + Gini risk-ranking check on frozen
-  M1/B1 — see "key finding" below), `08c_segment_breakdown.py` (M1/B1/M1_deploy
+  M1/B1 — see "key finding" below; also writes `within_storm_variance.csv`: ~90% of
+  payout-share variance is within one storm narrative, which is why M2's text can't
+  add much), `08c_segment_breakdown.py` (M1/B1/M1_deploy
   actual-vs-predicted by coverage band, occupancy type, flood zone, year), and
   in-sample (train/trainval) rows added to `metrics_overall.csv` by scoring the
-  frozen models (no refit). `pytest -q` passes, 94 tests. `README.md` (RUNBOOK 7.2)
-  is drafted — needs your edit pass on the framing, not the numbers.
+  frozen models (no refit). `pytest -q` passes (95 passed, 1 skipped). `README.md` (RUNBOOK 7.2)
+  rewritten 2026-11-24 to one page, framed for a reinsurer's data scientist to match
+  the deck (ranking first, catastrophe-level gap as the limitation).
 - **RUNBOOK 5.2 is DONE** (human sign-off on M1/M2, decided 2026-11-21): present M1 as
   final, as trained, with its known limitation documented rather than fixed before
   submission — see `docs/decisions.md` for the full reasoning (it has the best

@@ -45,6 +45,36 @@ def test_gini_risk_ranking_positive_for_perfect_ranking():
     assert gini > 0.3  # clearly separates low- from high-loss claims
 
 
+def test_between_group_variance_share_extremes():
+    m = _script_08b()
+    groups = np.array(["a", "a", "b", "b"])
+    # all variance between groups: constant within each group
+    assert m.between_group_variance_share(np.array([0.1, 0.1, 0.9, 0.9]), groups) == pytest.approx(1.0)
+    # all variance within groups: identical group means
+    assert m.between_group_variance_share(np.array([0.1, 0.9, 0.1, 0.9]), groups) == pytest.approx(0.0)
+    # no variance at all
+    assert np.isnan(m.between_group_variance_share(np.array([0.5] * 4), groups))
+
+
+def test_within_storm_variance_scope_and_split_rows():
+    import pandas as pd
+    m = _script_08b()
+    claims = pd.DataFrame({
+        "split": ["train"] * 4 + ["validation"] * 2 + ["test"] * 3,
+        "target": [0.1, 0.1, 0.9, 0.9, 0.2, 0.4, 0.3, 0.5, 0.99],
+        "narrative": ["n1", "n1", "n2", "n2", "n3", "n3", "n4", "n4", None],
+        "has_narrative": [True] * 8 + [False],
+        "quarantined": [False] * 7 + [True, False],
+    })
+    out = m.within_storm_variance(claims, "target", quarantine_on=True).set_index("split")
+    assert list(out.index) == ["train", "validation", "test"]
+    assert out.loc["train", "between_narrative_pct"] == pytest.approx(100.0)
+    assert out.loc["validation", "within_narrative_pct"] == pytest.approx(100.0)
+    # test: unmatched claim and quarantined claim both dropped -> 1 claim left
+    assert out.loc["test", "n_claims"] == 1
+    assert (out["between_narrative_pct"] + out["within_narrative_pct"]).dropna().round(6).eq(100).all()
+
+
 def test_gini_risk_ranking_negative_for_inverted_ranking():
     m = _script_08b()
     actual = np.array([1.0, 2.0, 5.0, 10.0, 50.0])
