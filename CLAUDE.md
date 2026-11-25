@@ -47,7 +47,8 @@ Update this section whenever a RUNBOOK step is finished.
   actual-vs-predicted by coverage band, occupancy type, flood zone, year), and
   in-sample (train/trainval) rows added to `metrics_overall.csv` by scoring the
   frozen models (no refit). `pytest -q` passes (95 passed, 1 skipped). `README.md` (RUNBOOK 7.2)
-  is drafted — needs your edit pass on the framing, not the numbers.
+  rewritten 2026-11-24 to one page, framed for a reinsurer's data scientist to match
+  the deck (ranking first, catastrophe-level gap as the limitation).
 - **RUNBOOK 5.2 is DONE** (human sign-off on M1/M2, decided 2026-11-21): present M1 as
   final, as trained, with its known limitation documented rather than fixed before
   submission — see `docs/decisions.md` for the full reasoning (it has the best
