@@ -32,11 +32,19 @@ output tables, so both are kept, not just the latest:
     first run sorted by predicted SHARE only, which ignores coverage size entirely
     and is why it disagreed with the share-based Spearman result.
 
+Also, separately (no model involved): a within-storm variance check. On the claims
+matched to a NOAA narrative (quarantined claims excluded, same scope as M2), split the
+variance of the payout-share target into between-narrative and within-narrative parts
+per split. Text features are identical for every claim sharing a narrative, so the
+between-narrative share is an upper bound on what storm text can explain.
+
 Inputs:
   - data/models/m1_lgbm.joblib, baselines.joblib (both frozen, from 07_train_models.py)
-  - data/interim/claims_with_text.parquet (test_full)
-  - config.yaml: fields.*, target.cap_share_at, random_seed, paths.*
+  - data/interim/claims_with_text.parquet (test_full; all splits for the variance check)
+  - config.yaml: fields.*, target.cap_share_at, quarantine.enabled, random_seed, paths.*
 Outputs:
+  - outputs/tables/within_storm_variance.csv (per split: n claims, n distinct
+    narratives, mean target, between- and within-narrative % of variance)
   - outputs/tables/ranking_check_deciles.csv (sort_by column: predicted_share /
     predicted_dollar)
   - outputs/tables/ranking_check_summary.csv (Spearman rho, Gini, by model x sort_by)
@@ -91,6 +99,40 @@ def gini_risk_ranking(y_actual_dollar: np.ndarray, y_pred_share: np.ndarray) -> 
     y = np.concatenate([[0.0], cum_loss_pct])
     area = np.trapezoid(y, x) if hasattr(np, "trapezoid") else np.trapz(y, x)
     return 1 - 2 * area
+
+
+def between_group_variance_share(y: np.ndarray, groups: np.ndarray) -> float:
+    """Share of the (population) variance of y explained by group means:
+    Var(E[y | group]) / Var(y), in [0, 1]. The remainder (1 - this) is within-group.
+    Returns NaN when y has zero variance."""
+    y = pd.Series(np.asarray(y, dtype=float))
+    total = y.var(ddof=0)
+    if total == 0:
+        return float("nan")
+    group_mean = y.groupby(np.asarray(groups)).transform("mean")
+    return float(group_mean.var(ddof=0) / total)
+
+
+def within_storm_variance(claims: pd.DataFrame, target_col: str, quarantine_on: bool) -> pd.DataFrame:
+    """How much of the payout-share variance could storm text explain, even in principle?
+
+    Every claim matched to the same NOAA narrative gets the same text features, so a
+    text feature can at most separate narratives from each other (between-narrative
+    variance), never claims within one narrative. This is an upper bound for M2's
+    text component, computed in-sample per split: a perfect narrative -> mean-share
+    lookup. Uses matched claims only, minus quarantined claims when quarantine is
+    enabled (same scope as M2 / M2_masked)."""
+    d = claims[claims["has_narrative"] & claims[target_col].notna()]
+    if quarantine_on:
+        d = d[~d["quarantined"]]
+    rows = []
+    for split in ("train", "validation", "test"):
+        s = d[d["split"] == split]
+        between = between_group_variance_share(s[target_col].to_numpy(), s["narrative"].to_numpy())
+        rows.append({"split": split, "n_claims": len(s), "n_distinct_narratives": s["narrative"].nunique(),
+                     "mean_target_share": s[target_col].mean(),
+                     "between_narrative_pct": 100 * between, "within_narrative_pct": 100 * (1 - between)})
+    return pd.DataFrame(rows)
 
 
 def main() -> None:
@@ -152,6 +194,16 @@ def main() -> None:
     summary.to_csv(tables / "ranking_check_summary.csv", index=False)
     logger.info("Ranking summary (test_full, frozen models, no refit; both sort_by versions kept):\n%s",
                summary.round(4).to_string(index=False))
+
+    # Within-storm variance check (why storm text can't add much; see within_storm_variance)
+    text_cols = ["split", target_col, "narrative", "has_narrative", "quarantined"]
+    claims_text = pd.read_parquet(get_path(cfg, "interim") / "claims_with_text.parquet", columns=text_cols)
+    log_rows(logger, claims_text, "claims_with_text (for within-storm variance check)")
+    wsv = within_storm_variance(claims_text, target_col, bool(require(cfg, "quarantine.enabled")))
+    wsv.to_csv(tables / "within_storm_variance.csv", index=False)
+    log_rows(logger, wsv, "within_storm_variance.csv")
+    logger.info("Within-storm variance (matched claims, share of payout-share variance):\n%s",
+               wsv.round(2).to_string(index=False))
 
     def lowest_decile_1m_pct(sort_by, model):
         row = deciles[(deciles.sort_by == sort_by) & (deciles.model == model) & (deciles.decile == 1)]
